@@ -34,6 +34,22 @@ def get_plan(profile_id: str):
 @router.patch("/session/{session_id}")
 def update_session(session_id: str, body: StatusUpdate):
     update_session_status(session_id, body.status)
+    
+    from retention.database import upsert_card
+    from .database import sessions_col
+    from bson import ObjectId
+    
+    if body.status == "done":
+        session = sessions_col.find_one({"_id": ObjectId(session_id)})
+        if session:
+            # Auto-create a concept card for spaced repetition
+            upsert_card(
+                profile_id=session["profile_id"],
+                topic=session["topic"],
+                subject=session["subject"],
+                source="planner_done"
+            )
+            
     return {"message": "Updated"}
 
 
