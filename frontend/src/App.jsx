@@ -5,6 +5,7 @@ import StudyPlan from "./components/planner/StudyPlan";
 
 import RetentionDashboard from "./components/retention/RetentionDashboard";
 import MockTestApp from "./components/mocktest/MockTestApp";
+import Dashboard from "./components/dashboard/Dashboard";
 
 function PlannerPage({ profileId, setProfileId, profile, setProfile }) {
   if (!profileId) {
@@ -32,12 +33,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div style={{ padding: '10px', background: '#f3f4f6', display: 'flex', gap: '15px' }}>
-        <Link to="/planner" id="nav-planner" style={{fontWeight: 'bold'}}>Study Planner</Link>
-        <Link to="/retention" id="nav-retention" style={{fontWeight: 'bold'}}>Spaced Repetition</Link>
-        <Link to="/mocktest" id="nav-mocktest" style={{fontWeight: 'bold'}}>Mock Test</Link>
-      </div>
       <Routes>
+        <Route path="/" element={<Dashboard />} />
         <Route 
           path="/planner" 
           element={<PlannerPage profileId={profileId} setProfileId={setProfileId} profile={profile} setProfile={setProfile} />} 
@@ -49,8 +46,6 @@ export default function App() {
           } 
         />
         <Route path="/mocktest" element={<MockTestApp />} />
-        {/* Redirect root to /planner for now */}
-        <Route path="/" element={<Navigate to="/planner" replace />} />
       </Routes>
     </BrowserRouter>
   );
