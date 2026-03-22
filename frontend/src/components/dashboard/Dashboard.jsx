@@ -46,6 +46,14 @@ export default function Dashboard() {
           <div className="dash-countdown-days">{daysLeft}</div>
           <div className="dash-countdown-unit">Days to JEE Advanced 2026</div>
         </div>
+
+        <button className="dash-logout-btn" onClick={() => {
+          localStorage.removeItem('isLoggedIn');
+          localStorage.removeItem('studentName');
+          window.location.href = '/login';
+        }}>
+          <span>🚪</span> Log Out
+        </button>
       </aside>
 
       {/* ===== MAIN ===== */}
