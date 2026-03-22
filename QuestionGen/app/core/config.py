@@ -29,9 +29,6 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "password"
 
-    # External APIs
-    GEMINI_API_KEY: str = ""
-
     class Config:
         case_sensitive = True
         env_file = ".env"

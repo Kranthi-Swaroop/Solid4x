@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from app.api.endpoints import practice, repetition, tests, analysis, solver, users
 
 api_router = APIRouter()

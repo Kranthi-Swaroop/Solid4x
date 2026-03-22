@@ -13,11 +13,15 @@ class MockTestResponse(BaseModel):
     section_a_mcq_count: int = 60
     section_b_nvq_count: int = 15
 
+class MockSubmissionItem(BaseModel):
+    question_id: str
+    is_correct: bool
+    time_spent: int
+
 class TestSubmission(BaseModel):
     user_id: str
     test_id: str
-    answers: dict  # Mapping of question_id to answer given
-    time_spent: dict # Mapping of question_id to time taken in seconds
+    answers: List[MockSubmissionItem]
 
 class TestAnalysisResponse(BaseModel):
     score: int

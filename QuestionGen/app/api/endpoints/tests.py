@@ -11,5 +11,9 @@ async def generate_mock_test(request: MockTestRequest):
 @router.post("/submit", response_model=TestAnalysisResponse)
 async def submit_test(submission: TestSubmission):
     return await TestGeneratorService.analyze_submission(
-        submission.user_id, submission.test_id, submission.answers, submission.time_spent
+        submission.user_id, submission.test_id, submission.answers
     )
+
+@router.get("/history/{user_id}")
+async def get_user_mock_tests(user_id: str):
+    return await TestGeneratorService.get_user_mock_tests(user_id)

@@ -82,4 +82,45 @@ class AdaptivePracticeService:
             "timestamp": datetime.utcnow()
         })
         
+        questions = db[settings.MONGODB_DB_NAME]['questions']
+        doc = await questions.find_one({"question_id": question_id})
+        if doc:
+            from app.services.spaced_repetition import SpacedRepetitionService
+            await SpacedRepetitionService.update_knowledge_graph(
+                user_id=user_id,
+                subject=doc.get("subject", "unknown"),
+                chapter=doc.get("chapter", "unknown"),
+                topic=doc.get("topic", "unknown"),
+                is_correct=is_correct
+            )
+        
         return True
+
+    @staticmethod
+    async def get_solved_correctly_ids(user_id: str) -> list[str]:
+        db = await get_database()
+        progress = db[settings.MONGODB_DB_NAME]['user_progress']
+        cursor = progress.find({"user_id": user_id, "is_correct": True}, {"question_id": 1})
+        docs = await cursor.to_list(length=50000)
+        return list(set(d["question_id"] for d in docs))
+
+    @staticmethod
+    async def generate_practice_questions(user_id: str, chapter: str = None, topic: str = None, limit: int = 5):
+        db = await get_database()
+        questions = db[settings.MONGODB_DB_NAME]['questions']
+        
+        solved_ids = await AdaptivePracticeService.get_solved_correctly_ids(user_id)
+        
+        match_query = {"question_id": {"$nin": solved_ids}}
+        if chapter:
+            match_query["chapter"] = chapter
+        if topic:
+            match_query["topic"] = topic
+            
+        cursor = questions.aggregate([
+            {"$match": match_query},
+            {"$sample": {"size": limit}}
+        ])
+        
+        docs = await cursor.to_list(length=limit)
+        return [QuestionResponse(**doc) for doc in docs]
