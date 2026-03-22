@@ -199,6 +199,17 @@ class TestGeneratorService:
         if progress_docs:
             await progress_collection.insert_many(progress_docs)
             
+        await db[settings.MONGODB_DB_NAME]['mock_tests'].update_one(
+            {"test_id": test_id},
+            {"$set": {
+                "score": analysis["final_score"],
+                "weak_areas": analysis["weak_areas"],
+                "strong_areas": analysis["strong_areas"],
+                "status": "completed",
+                "submitted_at": now
+            }}
+        )
+            
         return TestAnalysisResponse(
             score=analysis["final_score"],
             weak_areas=analysis["weak_areas"],
