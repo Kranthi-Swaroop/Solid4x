@@ -6,15 +6,24 @@ from app.services.test_generator import TestGeneratorService
 router = APIRouter()
 
 @router.post("/generate", response_model=MockTestResponse)
-async def generate_mock_test(request: MockTestRequest, user_id: str = Depends(get_current_user)):
+async def generate_mock_test(request: MockTestRequest):
     return await TestGeneratorService.generate_mock_test(request.user_id, request.subjects)
 
 @router.post("/submit", response_model=TestAnalysisResponse)
-async def submit_test(submission: TestSubmission, user_id: str = Depends(get_current_user)):
+async def submit_test(submission: TestSubmission):
     return await TestGeneratorService.analyze_submission(
         submission.user_id, submission.test_id, submission.answers
     )
 
 @router.get("/history/{user_id}")
-async def get_user_mock_tests(user_id: str, authenticated_user: str = Depends(get_current_user)):
+async def get_user_mock_tests(user_id: str):
     return await TestGeneratorService.get_user_mock_tests(user_id)
+
+@router.post("/ping/{test_id}")
+async def ping_test(test_id: str):
+    await TestGeneratorService.ping_test(test_id)
+    return {"status": "ok"}
+
+@router.get("/ongoing/{user_id}")
+async def get_ongoing_test(user_id: str):
+    return await TestGeneratorService.get_ongoing_test(user_id)

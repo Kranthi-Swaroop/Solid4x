@@ -44,9 +44,9 @@ class TestGeneratorService:
                 
                 nvq_due_cursor = questions.aggregate([
                     { "$match": { **match_base, "type": "integer", "topic": {"$in": due_topics} } },
-                    { "$sample": { "size": 30 } }
+                    { "$sample": { "size": 15 } }
                 ])
-                nvq_pool.extend(await nvq_due_cursor.to_list(length=30))
+                nvq_pool.extend(await nvq_due_cursor.to_list(length=15))
 
             # Fill the remaining mathematical variance randomly maintaining strict limits
             mcq_random_cursor = questions.aggregate([
@@ -57,9 +57,9 @@ class TestGeneratorService:
             
             nvq_random_cursor = questions.aggregate([
                 { "$match": { **match_base, "type": "integer" } },
-                { "$sample": { "size": 50 } }
+                { "$sample": { "size": 25 } }
             ])
-            nvq_pool.extend(await nvq_random_cursor.to_list(length=50))
+            nvq_pool.extend(await nvq_random_cursor.to_list(length=25))
             
             def unique_pool(pool):
                 seen = set()
@@ -117,7 +117,7 @@ class TestGeneratorService:
                 return selected
 
             final_mcqs = get_diverse_subset(mcq_pool, 20)
-            final_nvqs = get_diverse_subset(nvq_pool, 10)
+            final_nvqs = get_diverse_subset(nvq_pool, 5)
 
             subject_questions = []
             # Convert to strictly typed QuestionResponse
@@ -137,6 +137,8 @@ class TestGeneratorService:
             "total_questions": 75,
             "section_a_mcq_count": 60,
             "section_b_nvq_count": 15,
+            "status": "ongoing",
+            "last_ping": datetime.utcnow(),
             "created_at": datetime.utcnow()
         }
         await db[settings.MONGODB_DB_NAME]['mock_tests'].insert_one(mock_test_doc)

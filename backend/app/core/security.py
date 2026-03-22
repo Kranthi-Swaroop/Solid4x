@@ -1,20 +1,23 @@
 from datetime import datetime, timedelta
 from typing import Any, Union
 import jwt
-from passlib.context import CryptContext
+import bcrypt
 from app.core.config import settings
 
 SECRET_KEY = getattr(settings, "SECRET_KEY", "b336ef10bd65a9dbfa4f5f5e2270940cc2bf6cd5d781b2bf1d1cc6d013ac2441")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days token
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    if len(plain_password) > 71:
+        plain_password = plain_password[:71]
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    if len(password) > 71:
+        password = password[:71]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def create_access_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
     if expires_delta:
