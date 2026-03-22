@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Onboarding from "./components/planner/Onboarding";
 import StudyPlan from "./components/planner/StudyPlan";
 
 import RetentionDashboard from "./components/retention/RetentionDashboard";
 import MockTestApp from "./components/mocktest/MockTestApp";
 import Dashboard from "./components/dashboard/Dashboard";
+import AuthPage from "./components/auth/AuthPage";
 
 function PlannerPage({ profileId, setProfileId, profile, setProfile }) {
   if (!profileId) {
@@ -25,11 +26,27 @@ function PlannerPage({ profileId, setProfileId, profile, setProfile }) {
 }
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
   const [profileId, setProfileId] = useState(() => localStorage.getItem('profileId') || null);
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('profile');
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
   });
+
+  const handleLogin = (name) => {
+    setIsLoggedIn(true);
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<AuthPage onLogin={handleLogin} />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
 
   return (
     <BrowserRouter>
@@ -46,6 +63,8 @@ export default function App() {
           } 
         />
         <Route path="/mocktest" element={<MockTestApp />} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

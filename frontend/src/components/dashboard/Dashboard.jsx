@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './dashboard.css';
+import Chatbot from '../chatbot/Chatbot';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -46,6 +47,14 @@ export default function Dashboard() {
           <div className="dash-countdown-days">{daysLeft}</div>
           <div className="dash-countdown-unit">Days to JEE Advanced 2026</div>
         </div>
+
+        <button className="dash-logout-btn" onClick={() => {
+          localStorage.removeItem('isLoggedIn');
+          localStorage.removeItem('studentName');
+          window.location.href = '/login';
+        }}>
+          <span>🚪</span> Log Out
+        </button>
       </aside>
 
       {/* ===== MAIN ===== */}
@@ -247,6 +256,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <Chatbot />
     </div>
   );
 }
