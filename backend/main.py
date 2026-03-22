@@ -15,8 +15,10 @@ from pydantic import BaseModel
 from typing import Optional
 from database import (
     user_profiles_col, study_plans_col,
-    retention_concepts_col, retention_reviews_col, dashboard_cache_col
+    retention_concepts_col, retention_reviews_col, dashboard_cache_col,
+    syllabus_progress_col
 )
+from syllabus_data import JEE_SYLLABUS, get_total_topic_count
 
 app = FastAPI(title="Solid4x Backend")
 
@@ -522,3 +524,79 @@ def _refresh_due_count(user_id):
         {"$set": {"flashcards_due": due_count, "updated_at": now.isoformat()}},
         upsert=True
     )
+
+
+# ══════════════════════════════════════════════════════════
+# SYLLABUS TRACKER
+# ══════════════════════════════════════════════════════════
+
+@app.get("/syllabus/full")
+def get_full_syllabus():
+    """Return the complete JEE syllabus structure."""
+    return JEE_SYLLABUS
+
+
+@app.get("/syllabus/progress/{user_id}")
+def get_syllabus_progress(user_id: str):
+    """Return the user's completed topics."""
+    doc = syllabus_progress_col().find_one({"user_id": user_id})
+    completed = doc.get("completed", []) if doc else []
+    total = get_total_topic_count()
+    return {
+        "completed": completed,
+        "total_topics": total,
+        "completed_count": len(completed),
+        "coverage": round(len(completed) / total, 4) if total > 0 else 0,
+    }
+
+
+class SyllabusToggleRequest(BaseModel):
+    user_id: str
+    subject: str
+    chapter: str
+    topic: str
+
+
+@app.patch("/syllabus/toggle")
+def toggle_syllabus_topic(req: SyllabusToggleRequest):
+    """Toggle a topic's completion status."""
+    col = syllabus_progress_col()
+    key = f"{req.subject}|{req.chapter}|{req.topic}"
+
+    doc = col.find_one({"user_id": req.user_id})
+    if not doc:
+        col.insert_one({"user_id": req.user_id, "completed": [key]})
+        completed = [key]
+    else:
+        completed = doc.get("completed", [])
+        if key in completed:
+            completed.remove(key)
+        else:
+            completed.append(key)
+        col.update_one(
+            {"user_id": req.user_id},
+            {"$set": {"completed": completed}}
+        )
+
+    total = get_total_topic_count()
+    coverage = round(len(completed) / total, 4) if total > 0 else 0
+
+    # Also update dashboard cache
+    dashboard_cache_col().update_one(
+        {"user_id": req.user_id},
+        {"$set": {"syllabus_coverage": coverage, "updated_at": datetime.utcnow().isoformat()}},
+        upsert=True
+    )
+    # Update study plan coverage
+    study_plans_col().update_one(
+        {"user_id": req.user_id},
+        {"$set": {"syllabus_coverage": coverage}},
+        upsert=True
+    )
+
+    return {
+        "completed": completed,
+        "total_topics": total,
+        "completed_count": len(completed),
+        "coverage": coverage,
+    }
