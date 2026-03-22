@@ -7,15 +7,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
         changeOrigin: true,
       },
       "/planner": {
-        target: "http://localhost:8000",
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
         changeOrigin: true,
       },
       "/retention": {
-        target: "http://localhost:8000",
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
         changeOrigin: true,
       },
     },

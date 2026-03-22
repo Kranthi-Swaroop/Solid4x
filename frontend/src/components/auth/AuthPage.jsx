@@ -27,7 +27,7 @@ export default function AuthPage({ onLogin }) {
 
     try {
       if (mode === 'signup') {
-        const res = await fetch('http://localhost:8000/api/v1/users/create', {
+        const res = await fetch('https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/users/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -38,7 +38,7 @@ export default function AuthPage({ onLogin }) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || data.error || 'Signup failed');
-        
+
         // Auto transition array to login
         setMode('login');
         setError('Architecture built successfully! Please log in securely.');
@@ -47,7 +47,7 @@ export default function AuthPage({ onLogin }) {
         params.append('username', formData.email); // OAuth2 syntax mandates username mappings uniformly
         params.append('password', formData.password);
 
-        const res = await fetch('http://localhost:8000/api/v1/users/login', {
+        const res = await fetch('https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/users/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: params
@@ -59,7 +59,7 @@ export default function AuthPage({ onLogin }) {
         localStorage.setItem('token', token);
 
         // Harvest User details natively via JWT decode pipeline
-        const profileRes = await fetch('http://localhost:8000/api/v1/users/me', {
+        const profileRes = await fetch('https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/users/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const profileData = await profileRes.json();
@@ -126,13 +126,13 @@ export default function AuthPage({ onLogin }) {
         </div>
 
         <div className="auth-tabs">
-          <button 
+          <button
             className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
             onClick={() => setMode('login')}
           >
             Log In
           </button>
-          <button 
+          <button
             className={`auth-tab ${mode === 'signup' ? 'active' : ''}`}
             onClick={() => setMode('signup')}
           >
@@ -149,10 +149,10 @@ export default function AuthPage({ onLogin }) {
           {mode === 'signup' && (
             <div className="auth-field">
               <label>Full Name</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="name"
-                placeholder="Aryan Sharma" 
+                placeholder="Aryan Sharma"
                 value={formData.name}
                 onChange={handleChange}
                 required
@@ -162,10 +162,10 @@ export default function AuthPage({ onLogin }) {
 
           <div className="auth-field">
             <label>Email Address</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               name="email"
-              placeholder="aryan@example.com" 
+              placeholder="aryan@example.com"
               value={formData.email}
               onChange={handleChange}
               required
@@ -174,10 +174,10 @@ export default function AuthPage({ onLogin }) {
 
           <div className="auth-field">
             <label>Password</label>
-            <input 
+            <input
               type="password"
               name="password"
-              placeholder="••••••••" 
+              placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
               required
@@ -231,7 +231,7 @@ export default function AuthPage({ onLogin }) {
           </div>
 
           <div className="auth-switch">
-            {mode === 'login' 
+            {mode === 'login'
               ? <>Don't have an account? <span onClick={() => setMode('signup')}>Sign up</span></>
               : <>Already have an account? <span onClick={() => setMode('login')}>Log in</span></>
             }

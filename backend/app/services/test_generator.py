@@ -178,6 +178,9 @@ class TestGeneratorService:
         now = datetime.utcnow()
         progress_docs = []
         
+        import asyncio
+        neo4j_tasks = []
+
         for ans in answers:
             if ans.question_id not in doc_map: continue
             doc = doc_map[ans.question_id]
@@ -190,13 +193,18 @@ class TestGeneratorService:
                 "timestamp": now
             })
             
-            await SpacedRepetitionService.update_knowledge_graph(
-                user_id=user_id,
-                subject=doc.get("subject", "unknown"),
-                chapter=doc.get("chapter", "unknown"),
-                topic=doc.get("topic", "unknown"),
-                is_correct=ans.is_correct
+            neo4j_tasks.append(
+                SpacedRepetitionService.update_knowledge_graph(
+                    user_id=user_id,
+                    subject=doc.get("subject", "unknown"),
+                    chapter=doc.get("chapter", "unknown"),
+                    topic=doc.get("topic", "unknown"),
+                    is_correct=ans.is_correct
+                )
             )
+
+        if neo4j_tasks:
+            await asyncio.gather(*neo4j_tasks)
             
         if progress_docs:
             await progress_collection.insert_many(progress_docs)
