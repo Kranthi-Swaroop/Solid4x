@@ -32,7 +32,10 @@ const WEAK_TOPICS = {
 };
 
 export default function Onboarding({ onComplete }) {
-  const [name, setName] = useState("");
+  const storedName = localStorage.getItem('studentName') || '';
+  const userId = localStorage.getItem('profileId') || '';
+
+  const [name, setName] = useState(storedName);
   const [examDate, setExamDate] = useState("");
   const [dailyHours, setDailyHours] = useState(6);
   const [weakAreas, setWeakAreas] = useState([]);
@@ -58,10 +61,12 @@ export default function Onboarding({ onComplete }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          user_id: userId,
           name: name.trim(),
           exam_date: examDate,
           daily_hours: dailyHours,
           weak_areas: weakAreas,
+          target_exam: localStorage.getItem('targetExam') || 'JEE Advanced',
         }),
       });
 
@@ -71,7 +76,7 @@ export default function Onboarding({ onComplete }) {
       }
 
       const data = await res.json();
-      onComplete(data.profile_id, {
+      onComplete(data.profile_id || userId, {
         name: name.trim(),
         exam_date: examDate,
         daily_hours: dailyHours,

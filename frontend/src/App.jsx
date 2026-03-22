@@ -8,25 +8,9 @@ import MockTestApp from "./components/mocktest/MockTestApp";
 import Dashboard from "./components/dashboard/Dashboard";
 import AuthPage from "./components/auth/AuthPage";
 
-function PlannerPage({ profileId, setProfileId, profile, setProfile }) {
-  if (!profileId) {
-    return (
-      <Onboarding
-        onComplete={(id, p) => {
-          setProfileId(id);
-          setProfile(p);
-          localStorage.setItem('profileId', id);
-          localStorage.setItem('profile', JSON.stringify(p));
-        }}
-      />
-    );
-  }
-
-  return <StudyPlan profileId={profileId} profile={profile} />;
-}
-
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
+  const [needsOnboarding, setNeedsOnboarding] = useState(() => localStorage.getItem('onboarding_completed') !== 'true');
   const [profileId, setProfileId] = useState(() => localStorage.getItem('profileId') || null);
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('profile');
@@ -35,8 +19,40 @@ export default function App() {
 
   const handleLogin = (name) => {
     setIsLoggedIn(true);
+    // Check if onboarding was completed
+    checkOnboarding();
   };
 
+  const checkOnboarding = async () => {
+    const userId = localStorage.getItem('profileId');
+    if (!userId) { setNeedsOnboarding(true); return; }
+    try {
+      const res = await fetch(`/planner/onboarding-status/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.onboarding_completed) {
+          setNeedsOnboarding(false);
+          localStorage.setItem('onboarding_completed', 'true');
+        } else {
+          setNeedsOnboarding(true);
+        }
+      }
+    } catch {
+      // If backend is down, skip onboarding check
+      setNeedsOnboarding(false);
+    }
+  };
+
+  const handleOnboardingComplete = (id, p) => {
+    setProfileId(id || localStorage.getItem('profileId'));
+    setProfile(p);
+    localStorage.setItem('profileId', id || localStorage.getItem('profileId'));
+    localStorage.setItem('profile', JSON.stringify(p));
+    localStorage.setItem('onboarding_completed', 'true');
+    setNeedsOnboarding(false);
+  };
+
+  // Not logged in → auth page
   if (!isLoggedIn) {
     return (
       <BrowserRouter>
@@ -52,15 +68,25 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route 
-          path="/planner" 
-          element={<PlannerPage profileId={profileId} setProfileId={setProfileId} profile={profile} setProfile={setProfile} />} 
-        />
-        <Route 
-          path="/retention" 
+        <Route
+          path="/onboarding"
           element={
-            profileId ? <RetentionDashboard profileId={profileId} /> : <Navigate to="/planner" replace />
-          } 
+            <Onboarding
+              onComplete={handleOnboardingComplete}
+            />
+          }
+        />
+        <Route
+          path="/planner"
+          element={
+            profileId
+              ? <StudyPlan profileId={profileId} profile={profile} />
+              : <Navigate to="/onboarding" replace />
+          }
+        />
+        <Route
+          path="/retention"
+          element={<RetentionDashboard profileId={profileId || localStorage.getItem('profileId')} />}
         />
         <Route path="/mocktest" element={<MockTestApp />} />
         <Route path="/login" element={<Navigate to="/" replace />} />

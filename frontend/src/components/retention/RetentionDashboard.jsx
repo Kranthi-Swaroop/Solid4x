@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import FlashcardReview from "./FlashcardReview";
 import ConceptCard from "./ConceptCard";
-import AddConcept from "./AddConcept";
+import TopicPicker from "./TopicPicker";
 import "./retention.css";
 
 export default function RetentionDashboard({ profileId }) {
@@ -119,12 +119,12 @@ export default function RetentionDashboard({ profileId }) {
         <div className="ret-graph-header">
           <h2>Knowledge Graph</h2>
           <button className="ret-btn-add" onClick={() => setShowAddForm(!showAddForm)}>
-            {showAddForm ? "Cancel" : "+ Add Topic Manually"}
+            {showAddForm ? "Cancel" : "+ Add Topics"}
           </button>
         </div>
 
         {showAddForm && (
-          <AddConcept 
+          <TopicPicker 
             profileId={profileId} 
             onAdded={() => {
               setShowAddForm(false);

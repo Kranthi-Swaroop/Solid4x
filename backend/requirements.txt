@@ -1,16 +1,4 @@
 fastapi
 uvicorn
-motor
 pymongo
-chromadb
-pydantic
-pydantic-settings
-numpy
-scipy
-scikit-learn
-hdbscan
-python-multipart
-python-jose
-passlib
-neo4j
-httpx
+python-dotenv
