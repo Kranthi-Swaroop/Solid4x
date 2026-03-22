@@ -38,3 +38,21 @@ class SpacedRepetitionService:
             result = await session.run(query, user_id=user_id)
             records = await result.data()
             return records
+
+    @staticmethod
+    async def get_unpracticed_topics(user_id: str, subject: str) -> list[str]:
+        driver = get_neo4j_driver()
+        
+        query = """
+        MATCH (s:Subject {name: toLower($subject)})-[:HAS_CHAPTER]->(c:Chapter)-[:HAS_TOPIC]->(t:Topic)
+        WHERE NOT EXISTS {
+            MATCH (u:User {id: $user_id})-[r:STUDIED]->(t)
+        }
+        RETURN t.name AS topic_name
+        """
+        params = {"user_id": user_id, "subject": subject}
+            
+        async with driver.session() as session:
+            result = await session.run(query, **params)
+            records = await result.data()
+            return [record['topic_name'] for record in records]
