@@ -1,0 +1,43 @@
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from app.api.router import api_router
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.core.database import connect_to_mongo, close_mongo_connection
+from app.core.vector_db import connect_to_chroma
+from app.core.neo4j_db import connect_to_neo4j, close_neo4j_connection
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Execute exactly on server startup
+    await connect_to_mongo()
+    await connect_to_neo4j()
+    connect_to_chroma()
+    
+    yield  # Server runs here
+    
+    # Execute on server teardown
+    await close_neo4j_connection()
+    await close_mongo_connection()
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan
+)
+
+# Set all CORS enabled origins
+if settings.BACKEND_CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to Solid4x QuestionGen API"}
