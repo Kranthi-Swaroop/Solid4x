@@ -405,6 +405,12 @@ export default function MockTestApp() {
   if (view === 'practice_similar') {
     return (
       <div style={{ padding: '2rem', background: '#f8f9fa', minHeight: '100vh' }}>
+        <style dangerouslySetInnerHTML={{__html: `
+          .jee-mcq-inline-math mjx-container[display="true"] {
+            display: inline-block !important;
+            margin: 0 !important;
+          }
+        `}} />
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '2rem', color: '#343a40', margin: 0 }}>Practice Similar Concept Vectors</h2>
@@ -449,7 +455,7 @@ export default function MockTestApp() {
                              }}
                              style={{ display: 'flex', gap: '15px', alignItems: 'center', padding: '12px 15px', border, borderRadius: '8px', background: bg, cursor: isSubmitted ? 'default' : 'pointer', transition: 'all 0.2s' }}>
                               <strong style={{ color: '#495057', fontSize: '1.2rem', minWidth: '30px' }}>{opt.identifier})</strong>
-                              <div dangerouslySetInnerHTML={{ __html: opt.content ? opt.content.replace(/\$\$(.*?)\$\$/g, '\\($1\\)') : '' }} style={{ flex: 1, color: '#343a40', overflowWrap: 'break-word' }} />
+                              <div className="jee-mcq-inline-math" dangerouslySetInnerHTML={{ __html: opt.content || '' }} style={{ flex: 1, color: '#343a40', overflowWrap: 'break-word' }} />
                            </div>
                          );
                       })}

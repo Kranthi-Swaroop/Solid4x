@@ -13,6 +13,8 @@ class QuestionBase(BaseModel):
     is_image_question: bool = False
     options: List[dict] = []
     correct_options: List[str] = []
+    answer: Optional[str] = None
+    correct_answer: Optional[str] = None
 
 class QuestionResponse(QuestionBase):
     question_id: str
