@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.pyc
+chroma_db/
+chunks_cache.json
+index_state.json
+bm25_index.pkl
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Ignore large PDFs and reference material
+JEE/
+*.pdf

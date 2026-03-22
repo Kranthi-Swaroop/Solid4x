@@ -1,0 +1,16 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore environment variables
+.env
+
+# Ignore large database/index files
+chroma_db/
+chunks_cache.json
+bm25_index.pkl
+index_state.json
+
+# Ignore temporary/compiled tesseract files
+tesseract-installer.exe
