@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './dashboard.css';
+import Chatbot from '../chatbot/Chatbot';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -255,6 +256,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <Chatbot />
     </div>
   );
 }
