@@ -4,6 +4,7 @@ import Onboarding from "./components/planner/Onboarding";
 import StudyPlan from "./components/planner/StudyPlan";
 
 import RetentionDashboard from "./components/retention/RetentionDashboard";
+import MockTestApp from "./components/mocktest/MockTestApp";
 
 function PlannerPage({ profileId, setProfileId, profile, setProfile }) {
   if (!profileId) {
@@ -34,6 +35,7 @@ export default function App() {
       <div style={{ padding: '10px', background: '#f3f4f6', display: 'flex', gap: '15px' }}>
         <Link to="/planner" id="nav-planner" style={{fontWeight: 'bold'}}>Study Planner</Link>
         <Link to="/retention" id="nav-retention" style={{fontWeight: 'bold'}}>Spaced Repetition</Link>
+        <Link to="/mocktest" id="nav-mocktest" style={{fontWeight: 'bold'}}>Mock Test</Link>
       </div>
       <Routes>
         <Route 
@@ -46,6 +48,7 @@ export default function App() {
             profileId ? <RetentionDashboard profileId={profileId} /> : <Navigate to="/planner" replace />
           } 
         />
+        <Route path="/mocktest" element={<MockTestApp />} />
         {/* Redirect root to /planner for now */}
         <Route path="/" element={<Navigate to="/planner" replace />} />
       </Routes>
