@@ -4,7 +4,7 @@ import './mocktest.css';
 export default function QuestionPanel({ 
   question, answer, onAnswer, total,
   onSaveAndNext, onClear, onSaveAndMark, onMarkAndNext,
-  onBack, onGoNext, onSubmit, isFirst, isLast
+  onBack, onGoNext, onSubmit, isFirst, isLast, numericalLocked
 }) {
   
   // MathJax injection and typesetting
@@ -90,14 +90,25 @@ export default function QuestionPanel({
           </div>
         ) : (
           <div className="jee-integer-area">
-            <input 
-              type="text" 
-              className="jee-int-input"
-              placeholder="Enter integer answer" 
-              value={answer || ''}
-              onChange={handleIntChange}
-            />
-            <p className="jee-int-hint">Enter an integer value</p>
+            {numericalLocked ? (
+              <div className="jee-int-locked">
+                <p style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                  🔒 You have already attempted 5 numerical questions in this subject.
+                </p>
+                <p style={{ color: '#64748b' }}>You cannot attempt more numerical questions for this subject.</p>
+              </div>
+            ) : (
+              <>
+                <input 
+                  type="text" 
+                  className="jee-int-input"
+                  placeholder="Enter integer answer" 
+                  value={answer || ''}
+                  onChange={handleIntChange}
+                />
+                <p className="jee-int-hint">Enter an integer value (max 5 numerical per subject)</p>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -143,6 +143,28 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
 }
 .mocktest-root .jee-q-text-area img { max-width: 100%; height: auto; }
 
+/* Force MathJax SVG to render inline with text */
+.mocktest-root .jee-q-text-area mjx-container,
+.mocktest-root .jee-q-options-area mjx-container,
+.mocktest-root .jee-rc-question mjx-container,
+.mocktest-root .jee-rc-content mjx-container {
+  display: inline !important;
+  margin: 0 2px !important;
+}
+.mocktest-root .jee-q-text-area mjx-container svg,
+.mocktest-root .jee-q-options-area mjx-container svg {
+  display: inline !important;
+  vertical-align: middle;
+}
+.mocktest-root .jee-mcq-content mjx-container {
+  display: inline !important;
+  margin: 0 2px !important;
+}
+.mocktest-root .jee-mcq-content mjx-container svg {
+  display: inline !important;
+  vertical-align: middle;
+}
+
 /* ===== MCQ OPTIONS ===== */
 .mocktest-root .jee-q-options-area {
   padding: 0 25px 20px 25px;

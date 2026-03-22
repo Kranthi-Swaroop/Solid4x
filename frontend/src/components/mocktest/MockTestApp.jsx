@@ -27,7 +27,7 @@ export default function MockTestApp() {
       SUBJECTS.forEach(sub => {
         const qList = rawData.questions_by_subject[sub] || []
         const mcqs = qList.filter(q => q.type === 'mcq').slice(0, 20)
-        const ints = qList.filter(q => q.type === 'integer').slice(0, 5)
+        const ints = qList.filter(q => q.type === 'integer').slice(0, 10)
         const combined = [...mcqs, ...ints].map(q => {
           globalIndex++
           return { ...q, subject: sub, global_index: globalIndex }
@@ -39,6 +39,14 @@ export default function MockTestApp() {
     setAllQuestions(flatArr)
     setQuestionsBySubject(grouped)
   }, [])
+
+  // Count how many integer questions are answered per subject
+  const getNumericalAttempted = useCallback((subject) => {
+    return allQuestions
+      .filter(q => q.subject === subject && q.type === 'integer')
+      .filter(q => answers[q.question_id] !== undefined && answers[q.question_id] !== null && answers[q.question_id] !== '')
+      .length
+  }, [allQuestions, answers])
 
   useEffect(() => {
     if (submitted) return
@@ -56,9 +64,28 @@ export default function MockTestApp() {
   }, [submitted])
 
   const handleAnswer = useCallback((question_id, value) => {
+    // Enforce 5-numerical-attempt limit per subject
+    const question = allQuestions.find(q => q.question_id === question_id)
+    if (question && question.type === 'integer') {
+      const currentAns = answers[question_id]
+      const isAlreadyAnswered = currentAns !== undefined && currentAns !== null && currentAns !== ''
+      const isNewAnswer = value !== null && value !== undefined && value !== ''
+      
+      // If this is a new answer (not already answered), check the limit
+      if (!isAlreadyAnswered && isNewAnswer) {
+        const count = allQuestions
+          .filter(q => q.subject === question.subject && q.type === 'integer')
+          .filter(q => {
+            const a = answers[q.question_id]
+            return a !== undefined && a !== null && a !== ''
+          })
+          .length
+        if (count >= 5) return // Block — already attempted 5 numerical in this subject
+      }
+    }
     setAnswers(prev => ({ ...prev, [question_id]: value }))
     setVisited(prev => ({ ...prev, [question_id]: true }))
-  }, [])
+  }, [allQuestions, answers])
 
   const handleMarkForReview = useCallback((question_id) => {
     setMarkedForReview(prev => ({ ...prev, [question_id]: !prev[question_id] }))
@@ -88,6 +115,7 @@ export default function MockTestApp() {
         onMark={handleMarkForReview}
         onNavigate={handleNavigate}
         onSubmit={handleSubmit}
+        getNumericalAttempted={getNumericalAttempted}
       />
     )
   }

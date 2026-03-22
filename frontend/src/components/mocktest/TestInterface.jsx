@@ -6,7 +6,7 @@ import './mocktest.css';
 
 export default function TestInterface({ 
   allQuestions, answers, markedForReview, visited, timeLeft, 
-  onAnswer, onMark, onNavigate, onSubmit 
+  onAnswer, onMark, onNavigate, onSubmit, getNumericalAttempted 
 }) {
   const [activeSubject, setActiveSubject] = useState('Physics');
   const [currentIndex, setCurrentIndex] = useState(0); // 0-indexed in allQuestions
@@ -125,6 +125,7 @@ export default function TestInterface({
             onSubmit={onSubmit}
             isFirst={currentIndex === 0}
             isLast={currentIndex === allQuestions.length - 1}
+            numericalLocked={currentQuestion.type === 'integer' && getNumericalAttempted(activeSubject) >= 5 && !(answers[currentQId] !== undefined && answers[currentQId] !== null && answers[currentQId] !== '')}
           />
         </div>
         <div className="jee-right-panel">
