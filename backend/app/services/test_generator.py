@@ -216,7 +216,9 @@ class TestGeneratorService:
                 "weak_areas": analysis["weak_areas"],
                 "strong_areas": analysis["strong_areas"],
                 "status": "completed",
-                "submitted_at": now
+                "submitted_at": now,
+                "student_answers": {ans.question_id: ans.selected_option for ans in answers},
+                "student_times": {ans.question_id: ans.time_spent for ans in answers}
             }}
         )
             

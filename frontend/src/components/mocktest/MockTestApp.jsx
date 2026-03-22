@@ -10,6 +10,9 @@ export default function MockTestApp() {
   const [view, setView] = useState('dashboard');
   const [history, setHistory] = useState([]);
   const [ongoingTest, setOngoingTest] = useState(null);
+  const [practiceQuestions, setPracticeQuestions] = useState([]);
+  const [practiceAnswers, setPracticeAnswers] = useState({});
+  const [practiceSubmitted, setPracticeSubmitted] = useState({});
   const [loading, setLoading] = useState(true);
 
   const [allQuestions, setAllQuestions] = useState([]);
@@ -176,7 +179,8 @@ export default function MockTestApp() {
       return {
         question_id: q.question_id,
         is_correct: isCorrect,
-        time_spent: times[q.question_id] || 0
+        time_spent: times[q.question_id] || 0,
+        selected_option: userAns === undefined || userAns === null ? '' : String(userAns)
       };
     });
 
@@ -200,6 +204,100 @@ export default function MockTestApp() {
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [allQuestions, answers, testId, profileId]);
+
+  const viewHistoricalTest = (h) => {
+    if (h.status !== 'completed') return;
+    setTestId(h.test_id);
+    const allQs = [];
+    const subjectsMap = {};
+    if (h.questions_by_subject) {
+      Object.keys(h.questions_by_subject).forEach(subj => {
+        subjectsMap[subj] = h.questions_by_subject[subj];
+        allQs.push(...h.questions_by_subject[subj]);
+      });
+    }
+    setAllQuestions(allQs);
+    setQuestionsBySubject(subjectsMap);
+    
+    setAnswers(h.student_answers || {});
+    // Populate tracker mock times dynamically if needed. Handled via h.student_times natively in AnswerReview component layout mapping.
+    
+    // Create an artificial map to restore trackers dynamically simulating metrics
+    if (h.student_times) {
+      Object.keys(h.student_times).forEach(qId => {
+         trackerRef.current.times[qId] = h.student_times[qId];
+      });
+    }
+
+    setResultData(h);
+    setView('result');
+  };
+
+  const handlePracticeSimilar = async (questionId) => {
+    setLoading(true);
+    setPracticeAnswers({});
+    setPracticeSubmitted({});
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:8000/api/v1/practice/similar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ question_id: questionId, limit: 3 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPracticeQuestions(data);
+        setView('practice_similar');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitPracticeQuestion = async (q) => {
+    const userAns = practiceAnswers[q.question_id];
+    if (userAns === undefined || userAns === '') return;
+
+    let isCorrect = false;
+    if (q.type === 'mcq') {
+       isCorrect = q.correct_options?.includes(userAns);
+    } else {
+       const correctVal = String(q.correct_answer || q.answer).trim().toLowerCase();
+       isCorrect = correctVal === String(userAns).trim().toLowerCase();
+    }
+
+    setPracticeSubmitted(prev => ({ ...prev, [q.question_id]: isCorrect ? 'correct' : 'incorrect' }));
+
+    try {
+       const token = localStorage.getItem('token');
+       await fetch(`http://localhost:8000/api/v1/practice/submit`, {
+           method: 'POST',
+           headers: {
+               'Content-Type': 'application/json',
+               ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+           },
+           body: JSON.stringify({
+               user_id: profileId,
+               question_id: q.question_id,
+               is_correct: isCorrect,
+               time_spent: 30
+           })
+       });
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    if (view === 'practice_similar' && window.MathJax) {
+      setTimeout(() => {
+        window.MathJax.typesetPromise().catch(err => console.error(err));
+      }, 100);
+    }
+  }, [view, practiceQuestions]);
 
   if (loading && view === 'dashboard') return <div style={{ padding: '2rem' }}>Loading Secure Servers...</div>;
 
@@ -242,6 +340,11 @@ export default function MockTestApp() {
                     <span style={{ background: h.status === 'completed' ? '#d4edda' : (h.status === 'ongoing' ? '#fff3cd' : '#f8d7da'), padding: '4px 8px', borderRadius: '4px', fontSize: '0.9rem', color: h.status === 'completed' ? '#155724' : (h.status === 'ongoing' ? '#856404' : '#721c24') }}>
                       {h.status || 'unknown'}
                     </span>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    {h.status === 'completed' && (
+                       <button onClick={() => viewHistoricalTest(h)} style={{ background: '#007bff', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>View Report</button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -299,6 +402,115 @@ export default function MockTestApp() {
     );
   }
 
+  if (view === 'practice_similar') {
+    return (
+      <div style={{ padding: '2rem', background: '#f8f9fa', minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '2rem', color: '#343a40', margin: 0 }}>Practice Similar Concept Vectors</h2>
+            <button onClick={() => setView('result')} style={{ background: '#6c757d', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Back to Test Report
+            </button>
+          </div>
+          
+          {practiceQuestions.length === 0 && <p style={{ fontSize: '1.2rem', color: '#dc3545' }}>No active topological structures located...</p>}
+          
+          {practiceQuestions.map((q, idx) => (
+             <div key={q.question_id} style={{ marginBottom: '30px', background: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #dee2e6' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px' }}>
+                  <span style={{ background: '#007bff', color: 'white', padding: '4px 12px', borderRadius: '20px', fontWeight: 'bold' }}>Variant {idx + 1}</span>
+                  <span style={{ background: '#e9ecef', color: '#495057', padding: '4px 10px', borderRadius: '4px', fontSize: '0.9rem' }}>{q.chapter || 'Concept'}</span>
+                  <span style={{ background: q.difficulty === 'EASY' ? '#d4edda' : q.difficulty === 'HARD' ? '#f8d7da' : '#fff3cd', color: q.difficulty === 'EASY' ? '#155724' : q.difficulty === 'HARD' ? '#721c24' : '#856404', padding: '4px 10px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }}>{q.difficulty}</span>
+                </div>
+                
+                <div dangerouslySetInnerHTML={{ __html: q.question_text }} style={{ fontSize: '1.1rem', color: '#212529', lineHeight: '1.6', marginBottom: '20px' }} />
+                
+                {q.type === 'mcq' ? (
+                   <div style={{ display: 'grid', gap: '10px' }}>
+                      {q.options?.map(opt => {
+                         const isSelected = practiceAnswers[q.question_id] === opt.identifier;
+                         const isSubmitted = !!practiceSubmitted[q.question_id];
+                         const isCorrectOpt = q.correct_options?.includes(opt.identifier);
+                         
+                         let bg = '#f8f9fa';
+                         let border = '1px solid #ced4da';
+                         if (isSubmitted) {
+                             if (isCorrectOpt) { bg = '#d4edda'; border = '2px solid #28a745'; }
+                             else if (isSelected && !isCorrectOpt) { bg = '#f8d7da'; border = '2px solid #dc3545'; }
+                         } else if (isSelected) {
+                             bg = '#e2e6ea'; border = '2px solid #007bff';
+                         }
+                         
+                         return (
+                           <div 
+                             key={opt.identifier} 
+                             onClick={() => {
+                                if (!isSubmitted) setPracticeAnswers(prev => ({ ...prev, [q.question_id]: opt.identifier }));
+                             }}
+                             style={{ display: 'flex', gap: '15px', alignItems: 'center', padding: '12px 15px', border, borderRadius: '8px', background: bg, cursor: isSubmitted ? 'default' : 'pointer', transition: 'all 0.2s' }}>
+                              <strong style={{ color: '#495057', fontSize: '1.2rem', minWidth: '30px' }}>{opt.identifier})</strong>
+                              <div dangerouslySetInnerHTML={{ __html: opt.content ? opt.content.replace(/\$\$(.*?)\$\$/g, '\\($1\\)') : '' }} style={{ flex: 1, color: '#343a40', overflowWrap: 'break-word' }} />
+                           </div>
+                         );
+                      })}
+                   </div>
+                ) : (
+                   <div style={{ padding: '15px', background: '#e9ecef', borderRadius: '8px', border: '1px solid #ced4da', color: '#495057' }}>
+                      <input 
+                         type="text" 
+                         value={practiceAnswers[q.question_id] || ''} 
+                         onChange={(e) => setPracticeAnswers(prev => ({ ...prev, [q.question_id]: e.target.value }))}
+                         disabled={!!practiceSubmitted[q.question_id]}
+                         placeholder="Enter numerical integer..." 
+                         style={{ width: '100%', padding: '12px', fontSize: '1.1rem', border: '1px solid #ccc', borderRadius: '4px' }} 
+                      />
+                   </div>
+                )}
+                
+                {!practiceSubmitted[q.question_id] ? (
+                   <div style={{ marginTop: '20px' }}>
+                      <button 
+                        onClick={() => submitPracticeQuestion(q)} 
+                        disabled={practiceAnswers[q.question_id] === undefined || String(practiceAnswers[q.question_id]).trim() === ''} 
+                        style={{ background: '#007bff', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        Submit Question Matrix
+                      </button>
+                   </div>
+                ) : (
+                   <div style={{ marginTop: '25px', padding: '20px', background: '#f8f9fa', borderRadius: '6px', border: practiceSubmitted[q.question_id] === 'correct' ? '2px solid #28a745' : '2px solid #dc3545' }}>
+                      <h4 style={{ color: practiceSubmitted[q.question_id] === 'correct' ? '#28a745' : '#dc3545', margin: '0 0 10px 0', fontSize: '1.2rem' }}>
+                         {practiceSubmitted[q.question_id] === 'correct' ? 'Exact Form Calculated! ✅' : 'Incorrect Topology ❌'}
+                      </h4>
+                      <p style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>
+                        <strong>Exact Mathematical Form: </strong> 
+                        <span style={{ background: '#d4edda', color: '#155724', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', marginLeft: '10px' }}>
+                          {q.type === 'mcq' ? q.correct_options?.join(', ') : (q.correct_answer || q.answer)}
+                        </span>
+                      </p>
+                      {q.explanation && (
+                         <details onToggle={(e) => {
+                             if (e.target.open && window.MathJax) {
+                                 setTimeout(() => window.MathJax.typesetPromise().catch(err => console.error(err)), 50);
+                             }
+                         }}>
+                            <summary style={{ cursor: 'pointer', color: '#17a2b8', fontWeight: 'bold', fontSize: '1.1rem', padding: '10px', background: '#e0f3f5', borderRadius: '6px', border: '1px solid #bee5eb' }}>
+                              Expand Official Solution Architecture 👁️
+                            </summary>
+                            <div style={{ marginTop: '15px', padding: '20px', background: '#fff', borderRadius: '6px', border: '1px dashed #ced4da' }}>
+                               <h5 style={{ margin: '0 0 10px 0', color: '#6c757d', textTransform: 'uppercase', letterSpacing: '1px' }}>Structural Explanation</h5>
+                               <div dangerouslySetInnerHTML={{ __html: q.explanation }} style={{ color: '#343a40', lineHeight: '1.7', overflowX: 'auto' }} />
+                            </div>
+                         </details>
+                      )}
+                   </div>
+                )}
+             </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (view === 'result') {
     return (
       <div style={{ padding: '2rem', background: '#f8f9fa', minHeight: '100vh' }}>
@@ -312,6 +524,7 @@ export default function MockTestApp() {
             answers={answers}
             times={trackerRef.current.getAllTimes()}
             questionsBySubject={questionsBySubject}
+            onPracticeSimilar={handlePracticeSimilar}
           />
         </div>
       </div>

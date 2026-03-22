@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { scoreQuestion } from './utils/scoring';
 import './mocktest.css';
 
-export default function AnswerReview({ questions, answers, times }) {
+export default function AnswerReview({ questions, answers, times, onPracticeSimilar }) {
   const [sortBy, setSortBy] = useState('number'); // 'number', 'time', 'verdict'
   const [expandedQs, setExpandedQs] = useState({});
+  const [expandedExpl, setExpandedExpl] = useState({});
+
+  useEffect(() => {
+    if (window.MathJax) {
+      window.MathJax.typesetPromise().catch(err => console.error(err));
+    }
+  }, [expandedQs, expandedExpl, questions]);
 
   const toggleExpand = (id) => {
     setExpandedQs(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleExpl = (id) => {
+    setExpandedExpl(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const formatTime = (sec) => {
@@ -18,11 +29,12 @@ export default function AnswerReview({ questions, answers, times }) {
   };
 
   const getReviewData = () => {
-    return questions.map(q => {
+    return questions.map((q, index) => {
+      const idx = index + 1; // Explicit 1 to 90 mapping structurally
       const ans = answers[q.question_id];
       const timeSpent = times[q.question_id] || 0;
       const result = scoreQuestion(q, ans);
-      return { q, ans, timeSpent, result };
+      return { q, idx, ans, timeSpent, result };
     });
   };
 
@@ -36,7 +48,7 @@ export default function AnswerReview({ questions, answers, times }) {
       if (order[a.result.verdict] !== order[b.result.verdict]) {
         return order[a.result.verdict] - order[b.result.verdict];
       }
-      return a.q.global_index - b.q.global_index;
+      return a.idx - b.idx;
     });
   }
 
@@ -52,14 +64,15 @@ export default function AnswerReview({ questions, answers, times }) {
       </div>
 
       <div className="jee-review-list">
-        {reviewList.map(({ q, ans, timeSpent, result }) => {
+        {reviewList.map(({ q, idx, ans, timeSpent, result }) => {
           const isExpanded = expandedQs[q.question_id];
+          const isExplExpanded = expandedExpl[q.question_id];
 
           return (
             <div key={q.question_id} className="jee-review-card">
               <div className="jee-review-card-header">
                 <div className="jee-rc-meta">
-                  <span className="jee-rc-num">Q{q.global_index}</span>
+                  <span className="jee-rc-num">Q{idx}</span>
                   <span className="jee-rc-chip">{q.topic || q.chapter}</span>
                   <span className={`jee-rc-diff ${q.difficulty}`}>{q.difficulty}</span>
                 </div>
@@ -78,14 +91,19 @@ export default function AnswerReview({ questions, answers, times }) {
               <div className={`jee-rc-question ${isExpanded ? 'expanded' : 'collapsed'}`}>
                 <div dangerouslySetInnerHTML={{ __html: q.question_text }} />
               </div>
-              <button className="jee-rc-expand-btn" onClick={() => toggleExpand(q.question_id)}>
-                {isExpanded ? 'Show Less' : 'Show Full Question'}
-              </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button className="jee-rc-expand-btn" onClick={() => toggleExpand(q.question_id)}>
+                  {isExpanded ? 'Hide Full Question' : 'Show Full Question'}
+                </button>
+                <button className="jee-rc-expand-btn" onClick={() => toggleExpl(q.question_id)}>
+                  {isExplExpanded ? 'Hide Explanation' : 'View Explanation'}
+                </button>
+              </div>
 
               <div className="jee-rc-answers">
                 {q.type === 'mcq' ? (
                   <div className="jee-rc-mcq-grid">
-                    {q.options?.map((opt, idx) => {
+                    {q.options?.map((opt, o_idx) => {
                       const id = opt.identifier;
                       const content = opt.content;
                       const isCorrect = q.correct_options.includes(id);
@@ -96,7 +114,7 @@ export default function AnswerReview({ questions, answers, times }) {
                       else if (isSelected && !isCorrect) optionClass = 'wrong-opt';
 
                       return (
-                        <div key={idx} className={`jee-rc-mcq-option ${optionClass}`}>
+                        <div key={o_idx} className={`jee-rc-mcq-option ${optionClass}`}>
                           <div className="jee-rc-letter">{id}</div>
                           <div className="jee-rc-content" dangerouslySetInnerHTML={{ __html: content }} />
                         </div>
@@ -110,6 +128,29 @@ export default function AnswerReview({ questions, answers, times }) {
                   </div>
                 )}
               </div>
+              
+              {isExplExpanded && (
+                <div style={{ marginTop: '15px', borderTop: '2px dashed #dee2e6', paddingTop: '15px' }}>
+                  {q.explanation ? (
+                    <div style={{ background: '#e9ecef', padding: '15px', borderRadius: '4px', marginBottom: '15px' }}>
+                      <h4 style={{ margin: '0 0 10px 0', color: '#495057' }}>Official Explanation:</h4>
+                      <div dangerouslySetInnerHTML={{ __html: q.explanation }} style={{ fontSize: '0.95rem', color: '#212529', lineHeight: '1.6' }} />
+                    </div>
+                  ) : (
+                    <div style={{ background: '#e9ecef', padding: '15px', borderRadius: '4px', marginBottom: '15px' }}>
+                      <p style={{ margin: 0, color: '#495057' }}>No official explanation provided structurally.</p>
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                     <button 
+                       onClick={() => { if(onPracticeSimilar) onPracticeSimilar(q.question_id); }} 
+                       style={{ alignSelf: 'flex-start', background: '#17a2b8', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                       Practice Similar Concept (3 Questions) 🎯
+                     </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

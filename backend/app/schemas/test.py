@@ -17,6 +17,7 @@ class MockSubmissionItem(BaseModel):
     question_id: str
     is_correct: bool
     time_spent: int
+    selected_option: Optional[str] = None
 
 class TestSubmission(BaseModel):
     user_id: str

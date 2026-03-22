@@ -4,8 +4,8 @@ import AnswerReview from './AnswerReview';
 import { calcSubjectScore, analyzeConceptStrength, qualityOfTimeSpent } from './utils/analytics';
 import './mocktest.css';
 
-export default function ResultDashboard({ allQuestions, answers, times, questionsBySubject }) {
-  const [activeTab, setActiveTab] = useState('Overall');
+export default function ResultDashboard({ allQuestions, answers, times, questionsBySubject, onPracticeSimilar }) {
+  const [activeTab, setActiveTab] = useState('overview');
   const [showReview, setShowReview] = useState(false);
 
   const subjects = ['Physics', 'Chemistry', 'Mathematics'];
@@ -52,17 +52,17 @@ export default function ResultDashboard({ allQuestions, answers, times, question
 
   if (showReview) {
     let reviewQuestions = allQuestions;
-    if (activeTab !== 'Overall') {
+    if (activeTab !== 'overview') { // Changed from 'Overall' to 'overview'
       reviewQuestions = questionsBySubject[activeTab] || [];
     }
     return (
       <div className="mocktest-root">
       <div className="jee-results-page">
         <div className="jee-results-header">
-          <h2>Test Review — {activeTab === 'Overall' ? 'All Subjects' : activeTab}</h2>
+          <h2>Test Review — {activeTab === 'overview' ? 'All Subjects' : activeTab}</h2> {/* Changed from 'Overall' to 'overview' */}
           <button className="jee-btn-nav" onClick={() => setShowReview(false)}>Back to Dashboard</button>
         </div>
-        <AnswerReview questions={reviewQuestions} answers={answers} times={times} />
+        <AnswerReview questions={reviewQuestions} answers={answers} times={times} onPracticeSimilar={onPracticeSimilar} />
       </div>
       </div>
     );
@@ -78,8 +78,8 @@ export default function ResultDashboard({ allQuestions, answers, times, question
 
       <div className="jee-results-tabs">
         <button 
-          className={activeTab === 'Overall' ? 'active' : ''} 
-          onClick={() => setActiveTab('Overall')}
+          className={activeTab === 'overview' ? 'active' : ''} 
+          onClick={() => setActiveTab('overview')}
         >
           Overall
         </button>
@@ -95,7 +95,7 @@ export default function ResultDashboard({ allQuestions, answers, times, question
       </div>
 
       <div className="jee-results-content">
-        {activeTab === 'Overall' && (
+        {activeTab === 'overview' && (
           <div className="jee-overall-tab">
             <div className="jee-score-card">
               <h3>{totalScore} <span style={{ fontSize: '1.2rem', color: '#64748b' }}>/ 300</span></h3>
