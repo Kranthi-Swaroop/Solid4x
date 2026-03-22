@@ -61,6 +61,7 @@ export default function QuestionPanel({
         <div className="jee-q-chapter">{question.chapter}</div>
       </div>
       
+      <div className="jee-q-scroll-area">
       <div className="jee-q-text-area">
         <div dangerouslySetInnerHTML={{ __html: question.question_text }} />
       </div>
@@ -99,6 +100,7 @@ export default function QuestionPanel({
             <p className="jee-int-hint">Enter an integer value</p>
           </div>
         )}
+      </div>
       </div>
 
       <div className="jee-q-actions">

@@ -85,6 +85,12 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
   flex-direction: column;
   height: 100%;
   padding: 0;
+  overflow: hidden;
+}
+.mocktest-root .jee-q-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 .mocktest-root .jee-q-panel.empty { padding: 40px; font-size: 1.2rem; color: #64748b; }
 .mocktest-root .jee-q-header-complex {
