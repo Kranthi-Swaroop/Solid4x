@@ -8,7 +8,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from planner.routes import router as planner_router
-
+from retention.routes import router as retention_router
 app = FastAPI(title="Solid4x API", version="1.0.0")
 
 app.add_middleware(
@@ -20,3 +20,4 @@ app.add_middleware(
 )
 
 app.include_router(planner_router)
+app.include_router(retention_router)
