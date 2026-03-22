@@ -17,16 +17,69 @@ export default function AuthPage({ onLogin }) {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Demo auth — just store name and navigate
-    const studentName = mode === 'signup' ? formData.name : (formData.email.split('@')[0] || 'Student');
-    localStorage.setItem('studentName', studentName);
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('targetExam', formData.targetExam);
-    localStorage.setItem('targetYear', formData.targetYear);
-    if (onLogin) onLogin(studentName);
-    navigate('/');
+    setLoading(true);
+    setError('');
+
+    try {
+      if (mode === 'signup') {
+        const res = await fetch('http://localhost:8000/api/v1/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: formData.name,
+            email: formData.email,
+            password: formData.password
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || 'Signup failed');
+        
+        // Auto transition array to login
+        setMode('login');
+        setError('Architecture built successfully! Please log in securely.');
+      } else {
+        const params = new URLSearchParams();
+        params.append('username', formData.email); // OAuth2 syntax mandates username mappings uniformly
+        params.append('password', formData.password);
+
+        const res = await fetch('http://localhost:8000/api/v1/users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || 'Authenication denied structurally.');
+
+        const token = data.access_token;
+        localStorage.setItem('token', token);
+
+        // Harvest User details natively via JWT decode pipeline
+        const profileRes = await fetch('http://localhost:8000/api/v1/users/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const profileData = await profileRes.json();
+        if (!profileRes.ok) throw new Error('Architecture boundary denied user payload fetch');
+
+        localStorage.setItem('studentName', profileData.username);
+        // Important: Use profileId natively throughout vectors/history
+        localStorage.setItem('profileId', profileData.user_id);
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('targetExam', formData.targetExam || 'JEE Advanced');
+        localStorage.setItem('targetYear', formData.targetYear || '2026');
+
+        if (onLogin) onLogin(profileData.username);
+        navigate('/');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,6 +141,11 @@ export default function AuthPage({ onLogin }) {
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
+          {error && (
+            <div style={{ background: error.includes('successfully') ? '#d4edda' : '#f8d7da', color: error.includes('successfully') ? '#155724' : '#721c24', padding: '10px', borderRadius: '4px', marginBottom: '15px', fontSize: '0.9rem', border: `1px solid ${error.includes('successfully') ? '#c3e6cb' : '#f5c6cb'}` }}>
+              {error}
+            </div>
+          )}
           {mode === 'signup' && (
             <div className="auth-field">
               <label>Full Name</label>
@@ -157,8 +215,8 @@ export default function AuthPage({ onLogin }) {
             </div>
           )}
 
-          <button type="submit" className="auth-submit">
-            {mode === 'login' ? 'Log In' : 'Create Account'}
+          <button type="submit" className="auth-submit" disabled={loading}>
+            {loading ? 'Processing Node...' : (mode === 'login' ? 'Log In' : 'Create Account')}
           </button>
 
           <div className="auth-divider">or continue with</div>

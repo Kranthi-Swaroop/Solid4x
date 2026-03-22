@@ -44,9 +44,9 @@ class TestGeneratorService:
                 
                 nvq_due_cursor = questions.aggregate([
                     { "$match": { **match_base, "type": "integer", "topic": {"$in": due_topics} } },
-                    { "$sample": { "size": 15 } }
+                    { "$sample": { "size": 30 } }
                 ])
-                nvq_pool.extend(await nvq_due_cursor.to_list(length=15))
+                nvq_pool.extend(await nvq_due_cursor.to_list(length=30))
 
             # Fill the remaining mathematical variance randomly maintaining strict limits
             mcq_random_cursor = questions.aggregate([
@@ -57,9 +57,9 @@ class TestGeneratorService:
             
             nvq_random_cursor = questions.aggregate([
                 { "$match": { **match_base, "type": "integer" } },
-                { "$sample": { "size": 25 } }
+                { "$sample": { "size": 50 } }
             ])
-            nvq_pool.extend(await nvq_random_cursor.to_list(length=25))
+            nvq_pool.extend(await nvq_random_cursor.to_list(length=50))
             
             def unique_pool(pool):
                 seen = set()
@@ -117,7 +117,7 @@ class TestGeneratorService:
                 return selected
 
             final_mcqs = get_diverse_subset(mcq_pool, 20)
-            final_nvqs = get_diverse_subset(nvq_pool, 5)
+            final_nvqs = get_diverse_subset(nvq_pool, 10)
 
             subject_questions = []
             # Convert to strictly typed QuestionResponse
@@ -134,9 +134,9 @@ class TestGeneratorService:
             "user_id": user_id,
             "subjects": subjects,
             "questions_by_subject": {sub: [q.model_dump() for q in qlist] for sub, qlist in questions_by_subject.items()},
-            "total_questions": 75,
+            "total_questions": 90,
             "section_a_mcq_count": 60,
-            "section_b_nvq_count": 15,
+            "section_b_nvq_count": 30,
             "status": "ongoing",
             "last_ping": datetime.utcnow(),
             "created_at": datetime.utcnow()
@@ -146,9 +146,9 @@ class TestGeneratorService:
         return MockTestResponse(
             test_id=test_id,
             questions_by_subject=questions_by_subject,
-            total_questions=75,
+            total_questions=90,
             section_a_mcq_count=60,
-            section_b_nvq_count=15
+            section_b_nvq_count=30
         )
 
     @staticmethod
@@ -225,3 +225,48 @@ class TestGeneratorService:
         cursor = db[settings.MONGODB_DB_NAME]['mock_tests'].find({"user_id": user_id}, {"_id": 0})
         tests = await cursor.to_list(length=100)
         return tests
+
+    @staticmethod
+    async def ping_test(test_id: str):
+        db = await get_database()
+        await db[settings.MONGODB_DB_NAME]['mock_tests'].update_one(
+            {"test_id": test_id},
+            {"$set": {"last_ping": datetime.utcnow()}}
+        )
+
+    @staticmethod
+    async def get_ongoing_test(user_id: str):
+        db = await get_database()
+        from datetime import timedelta
+        ten_mins_ago = datetime.utcnow() - timedelta(minutes=10)
+        
+        test = await db[settings.MONGODB_DB_NAME]['mock_tests'].find_one(
+            {
+                "user_id": user_id,
+                "status": "ongoing",
+                "last_ping": {"$gte": ten_mins_ago}
+            },
+            {"_id": 0}
+        )
+        if test:
+            created_at = test["created_at"]
+            elapsed_seconds = (datetime.utcnow() - created_at).total_seconds()
+            time_left = max(0, (3 * 3600) - elapsed_seconds)
+            return {
+                "test_id": test["test_id"],
+                "questions_by_subject": test["questions_by_subject"],
+                "total_questions": test.get("total_questions", 90),
+                "section_a_mcq_count": test.get("section_a_mcq_count", 60),
+                "section_b_nvq_count": test.get("section_b_nvq_count", 30),
+                "time_left": time_left
+            }
+        
+        await db[settings.MONGODB_DB_NAME]['mock_tests'].update_many(
+            {
+                "user_id": user_id,
+                "status": "ongoing",
+                "last_ping": {"$lt": ten_mins_ago}
+            },
+            {"$set": {"status": "abandoned"}}
+        )
+        return None

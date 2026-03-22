@@ -216,7 +216,7 @@ export default function MockTestApp() {
         )}
         <div style={{marginBottom: '2rem', background: '#f8f9fa', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)'}}>
           <h2 style={{fontSize: '1.8rem', color: '#343a40'}}>Commence New Mock Test</h2>
-          <p style={{fontSize: '1.1rem'}}>Strictly simulated 75-Question JEE Format (20 MCQs, 5 Numerical per Subject).</p>
+          <p style={{fontSize: '1.1rem'}}>Strictly simulated 90-Question JEE Format (20 MCQs, 10 Numerical per Subject - Attempt any 5).</p>
           <p style={{color: '#d9534f', fontWeight: 'bold'}}>Warning: This test strictly requires 3 unbroken hours. Severing the HTTP browser link abandons your payload in 10 minutes autonomously.</p>
           <button onClick={() => setView('instructions')} style={{background: '#007bff', color: 'white', padding: '12px 24px', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '10px', fontSize: '1.1rem', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,123,255,0.4)'}}>Proceed to Secure Platform</button>
         </div>
@@ -258,9 +258,9 @@ export default function MockTestApp() {
         <h2 style={{borderBottom: '2px solid #007bff', paddingBottom: '10px'}}>Security Rules & Instructions</h2>
         <ul style={{lineHeight: '1.8', fontSize: '1.1rem', marginTop: '20px'}}>
           <li><b>1.</b> The rigorous topological simulation operates continuously for exactly 180 mathematical minutes.</li>
-          <li><b>2.</b> Subjects map 20 standard MCQs and 10 Numerical constructs mathematically. You are permitted merely 5 integer attempts!</li>
+          <li><b>2.</b> Subjects map precisely 20 standard MCQs and 10 Numerical constructs mathematically. You are permitted merely 5 integer attempts overall per subject.</li>
           <li><b>3.</b> System executes a strict +4/-1 Marking standard logically against your submitted vectors.</li>
-          <li><b>4.</b> The testing architecture pings standard HTTP tokens every 60s natively. Disconnecting your connection will forfeit your score!</li>
+          <li><b>4.</b> The testing architecture computationally pings standard HTTP tokens every 60s natively. Closing your interface permanently forfeits your score within exactly 10 minutes!</li>
         </ul>
         <div style={{marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '20px'}}>
             <button onClick={startNewTest} disabled={loading} style={{background: '#28a745', color: 'white', padding: '15px 30px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold'}}>
