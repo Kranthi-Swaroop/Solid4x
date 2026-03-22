@@ -94,6 +94,15 @@ class RetentionService:
             "interval": interval
         }
 
+        # Synchronize with Neo4j Global Knowledge Graph mathematically
+        from app.services.spaced_repetition import SpacedRepetitionService
+        is_correct = (quality >= 3)
+        await SpacedRepetitionService.update_topic_strength(
+            user_id=doc.get("user_id"),
+            topic=doc.get("topic", "Unknown"),
+            is_correct=is_correct
+        )
+
         await cards_col.update_one(
             {"_id": ObjectId(card_id)},
             {

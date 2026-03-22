@@ -21,6 +21,20 @@ class SpacedRepetitionService:
             await session.run(query, user_id=user_id, subject=subject, chapter=chapter, topic=topic, change=change)
 
     @staticmethod
+    async def update_topic_strength(user_id: str, topic: str, is_correct: bool):
+        driver = get_neo4j_driver()
+        query = """
+        MERGE (u:User {id: $user_id})
+        MERGE (t:Topic {name: $topic})
+        MERGE (u)-[r:STUDIED]->(t)
+        ON CREATE SET r.strength = CASE WHEN $change > 0 THEN $change ELSE 0.1 END, r.last_reviewed = datetime()
+        ON MATCH SET r.strength = r.strength + $change, r.last_reviewed = datetime()
+        """
+        change = 1.0 if is_correct else -0.5
+        async with driver.session() as session:
+            await session.run(query, user_id=user_id, topic=topic, change=change)
+
+    @staticmethod
     async def get_due_reviews(user_id: str):
         driver = get_neo4j_driver()
         # Forgetting curve: R = e^(-t/S) where S is strength. If R < 0.7, review is due.

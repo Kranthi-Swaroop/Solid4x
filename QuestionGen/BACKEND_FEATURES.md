@@ -47,7 +47,7 @@ When a student ultimately submits a mock test, the backend calculates the absolu
 Finally, when a student needs to understand where they went wrong, the `/solver` endpoint organically maps to the structurally vetted dataset text explanations immediately locally instead of risking VLM LLM hallucinations.
 
 ## 7. Static Curriculum Knowledge Base
-`GET /api/v1/repetition/unpracticed/{user_id}?subject=physics`
+`GET /api/v1/repetition/unpracticed?subject=physics`
 
 **How it works:**
 Instead of relying on flat `.json` syllabus lists, the entirety of the 15,000 document database curriculum has been logically mapped inside Neo4j as a static structural tree.
@@ -58,3 +58,15 @@ If the frontend needs to understand what portions of the syllabus a student has 
 
 **How it works:**
 The User Service Controller maintains a dedicated `users` collection in MongoDB alongside vector tests and analytics. To create a sample user or register a genuine dashboard user, submit an `email`, `username`, and `password` payload. The API natively intercepts it, enforces uniqueness via MongoDB aggregation checks to prevent metadata ghosting, constructs a robust tracking environment, and emits a permanent string `user_id` mapped synchronously to all downstream analytics pipelines and Spaced Repetition profiles!
+
+## 9. Algorithmic Study Planner (Neo4j Engine)
+`POST /api/v1/planner/onboard` & `GET /api/v1/planner/plan`
+
+**How it works:**
+The planner leverages the absolute raw power of the **Neo4j** node database instead of brittle LLM hallucinations. Upon onboarding, the API instantly queries the Spaced Repetition core to mathematically fetch a learner's biologically "Decayed" Memory Nodes. It seamlessly splices missed topics and decayed topics to the exact top of the scheduling queue arrays. From there, it deterministically pads the remainder of the 7-day study block strictly adhering to the standard Syllabus tree map native limits! The resulting array is lightning-fast, highly deterministic, and entirely customized solely through the student's algorithmic physics trajectory.
+
+## 10. SuperMemo-2 (SM2) Flashcard Retention
+`POST /api/v1/flashcards/review` & `GET /api/v1/flashcards/due`
+
+**How it works:**
+When a student finishes a specific AI Study Planner block, the API synchronously generates a pure analytical Memory Hook flashcard. Utilizing the classic SM-2 algorithm, the API calculates a progressive `easiness` multiplication factor and biologically predictable `repetitions`/`interval` logic. Each flashcard securely generates a permanent specific exact ISO-Date indicating when biology guarantees they are 95% likely to forget the concept!
