@@ -36,7 +36,15 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
+from fastapi.staticfiles import StaticFiles
+
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Mount Audio Files so frontend can stream them freely
+import os
+os.makedirs("data/audio", exist_ok=True)
+app.mount("/static/audio", StaticFiles(directory="data/audio"), name="audio")
+
 
 @app.get("/")
 def root():

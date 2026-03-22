@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # CORS setup
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "password"
+
+    # Gemini Settings (For YouTube & Solvers)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "models/gemma-3-27b-it"
 
     class Config:
         case_sensitive = True
