@@ -1,8 +1,20 @@
 from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import List
 from app.services.analytics import AnalyticsService
 
 router = APIRouter()
 
-@router.get("/stats/{user_id}")
-async def get_user_stats(user_id: str):
-    return await AnalyticsService.get_student_stats(user_id)
+class MockSubmissionItem(BaseModel):
+    question_id: str
+    is_correct: bool
+    time_spent: int
+
+class MockSubmissionPayload(BaseModel):
+    user_id: str
+    test_id: str
+    answers: List[MockSubmissionItem]
+
+@router.post("/mock")
+async def analyze_mock_test(payload: MockSubmissionPayload):
+    return await AnalyticsService.process_mock_submission(payload)

@@ -1,3 +1,4 @@
+from app.core.vector_db import get_vector_db
 from app.core.database import get_database
 from app.core.config import settings
 from app.schemas.question import QuestionResponse
@@ -11,19 +12,27 @@ class AdaptivePracticeService:
         questions = db[settings.MONGODB_DB_NAME]['questions']
 
         try:
+            # 0. Fetch the target metadata to restrict results to same Chapter
+            target_question = await questions.find_one({"question_id": question_id})
+            if not target_question:
+                return []
+            
+            target_subject = target_question.get('subject')
+            target_chapter = target_question.get('chapter')
+
             # 1. Fetch exact embedding footprint of the failed question
             target_res = vector_collection.get(ids=[question_id], include=["embeddings"])
             
-            if not target_res or not target_res['embeddings']:
+            if not target_res or len(target_res.get('embeddings', [])) == 0:
                 return []
                 
             target_embedding = target_res['embeddings'][0]
             
             # 2. Run K-Nearest Neighbors via ChromaDB
-            # limit+1 because the exact question itself will logically be the first match
+            # Over-fetch heavily across the global DB so we can trim down mathematically to the specific chapter
             results = vector_collection.query(
                 query_embeddings=[target_embedding],
-                n_results=limit + 1
+                n_results=100
             )
             
             if not results or not results['ids']:
@@ -31,18 +40,28 @@ class AdaptivePracticeService:
             
             similar_ids = results['ids'][0]
             
-            # 3. Exclude the absolute match and constrain to limit
-            filtered_ids = [sid for sid in similar_ids if sid != question_id][:limit]
+            # 3. Exclude the absolute match
+            filtered_ids = [sid for sid in similar_ids if sid != question_id]
             
-            # 4. Hydrate the metadata from MongoDB
-            cursor = questions.find({"question_id": {"$in": filtered_ids}})
-            raw_docs = await cursor.to_list(length=limit)
+            # 4. Hydrate the metadata from MongoDB explicitly strictly matching Domain Parity
+            cursor = questions.find({
+                "question_id": {"$in": filtered_ids},
+                "subject": target_subject,
+                "chapter": target_chapter
+            })
+            raw_docs = await cursor.to_list(length=100)
             
-            # Convert accurately to QuestionResponse models
+            # 5. MongoDB find() loses order. Re-map directly to ChromaDB's absolute nearest-distance ranking!
+            doc_map = {str(d['question_id']): d for d in raw_docs}
+            
             final_pool = []
-            for doc in raw_docs:
-                doc['question_id'] = str(doc['question_id'])
-                final_pool.append(doc)
+            for sid in filtered_ids:
+                if sid in doc_map:
+                    doc = doc_map[sid]
+                    doc['question_id'] = str(doc['question_id'])
+                    final_pool.append(doc)
+                    if len(final_pool) == limit:
+                        break
             
             return final_pool
             
@@ -63,7 +82,45 @@ class AdaptivePracticeService:
             "timestamp": datetime.utcnow()
         })
         
-        # If the student got it wrong or struggled on it (120+ seconds), surface targeted K-NN vectors immediately
-        if not is_correct or time_spent > 120:
-            return await AdaptivePracticeService.get_similar_questions(question_id, limit=3)
-        return []
+        questions = db[settings.MONGODB_DB_NAME]['questions']
+        doc = await questions.find_one({"question_id": question_id})
+        if doc:
+            from app.services.spaced_repetition import SpacedRepetitionService
+            await SpacedRepetitionService.update_knowledge_graph(
+                user_id=user_id,
+                subject=doc.get("subject", "unknown"),
+                chapter=doc.get("chapter", "unknown"),
+                topic=doc.get("topic", "unknown"),
+                is_correct=is_correct
+            )
+        
+        return True
+
+    @staticmethod
+    async def get_solved_correctly_ids(user_id: str) -> list[str]:
+        db = await get_database()
+        progress = db[settings.MONGODB_DB_NAME]['user_progress']
+        cursor = progress.find({"user_id": user_id, "is_correct": True}, {"question_id": 1})
+        docs = await cursor.to_list(length=50000)
+        return list(set(d["question_id"] for d in docs))
+
+    @staticmethod
+    async def generate_practice_questions(user_id: str, chapter: str = None, topic: str = None, limit: int = 5):
+        db = await get_database()
+        questions = db[settings.MONGODB_DB_NAME]['questions']
+        
+        solved_ids = await AdaptivePracticeService.get_solved_correctly_ids(user_id)
+        
+        match_query = {"question_id": {"$nin": solved_ids}}
+        if chapter:
+            match_query["chapter"] = chapter
+        if topic:
+            match_query["topic"] = topic
+            
+        cursor = questions.aggregate([
+            {"$match": match_query},
+            {"$sample": {"size": limit}}
+        ])
+        
+        docs = await cursor.to_list(length=limit)
+        return [QuestionResponse(**doc) for doc in docs]

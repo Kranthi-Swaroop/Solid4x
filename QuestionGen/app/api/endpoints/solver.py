@@ -1,9 +1,12 @@
 from fastapi import APIRouter
-from app.schemas.solver import ConceptSolverRequest, ConceptSolverResponse
+from pydantic import BaseModel
 from app.services.concept_solver import ConceptSolverService
 
 router = APIRouter()
 
-@router.post("/solve", response_model=ConceptSolverResponse)
-async def solve_concept(request: ConceptSolverRequest):
-    return await ConceptSolverService.solve_step_by_step(request.query_text, request.subject)
+class SolverRequest(BaseModel):
+    question_id: str
+
+@router.post("/explain")
+async def explain_concept(request: SolverRequest):
+    return await ConceptSolverService.solve_question(request.question_id)

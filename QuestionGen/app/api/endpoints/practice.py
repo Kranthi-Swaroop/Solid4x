@@ -15,8 +15,13 @@ class PracticeSubmission(BaseModel):
 async def get_similar_questions(request: SimilarQuestionRequest):
     return await AdaptivePracticeService.get_similar_questions(request.question_id, request.limit)
 
-@router.post("/submit", response_model=list[QuestionResponse])
+@router.get("/generate", response_model=list[QuestionResponse])
+async def generate_practice_questions(user_id: str, chapter: str = None, topic: str = None, limit: int = 5):
+    return await AdaptivePracticeService.generate_practice_questions(user_id, chapter, topic, limit)
+
+@router.post("/submit")
 async def submit_practice_answer(submission: PracticeSubmission):
-    return await AdaptivePracticeService.analyze_error_rates(
+    await AdaptivePracticeService.analyze_error_rates(
         submission.user_id, submission.question_id, submission.is_correct, submission.time_spent
     )
+    return {"status": "logged successfully"}
