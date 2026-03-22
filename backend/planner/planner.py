@@ -8,13 +8,7 @@ from datetime import date, datetime
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 model = genai.GenerativeModel(
-    model_name="gemini-2.5-pro-preview-03-25",
-    system_instruction=(
-        "You are an autonomous JEE study planner AI. "
-        "You only respond with raw valid JSON. "
-        "No markdown, no explanation, no code fences. "
-        "Only the JSON object."
-    ),
+    model_name="gemma-3-27b-it",
 )
 
 
@@ -28,12 +22,16 @@ def clean_json(text: str) -> dict:
     if text.startswith("```"):
         text = text.split("```")[1]
         if text.startswith("json"):
-            text = text[4:]
+            text = text.replace("json", "", 1)
     return json.loads(text.strip())
 
 
 def build_prompt(profile: dict, missed: list) -> str:
     return f"""
+System Instructions:
+You are an autonomous JEE study planner AI. You only respond with raw valid JSON.
+No markdown, no explanation, no code fences. Only the JSON object.
+
 Student profile:
 - Name: {profile['name']}
 - Exam date: {profile['exam_date']} ({days_remaining(profile['exam_date'])} days left)
