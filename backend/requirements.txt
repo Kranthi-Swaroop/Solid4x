@@ -17,3 +17,5 @@ youtube-transcript-api
 edge-tts
 google-genai
 python-dotenv
+PyMuPDF
+chromadb
