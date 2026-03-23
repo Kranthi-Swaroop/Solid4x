@@ -52,7 +52,7 @@ export default function StudyPlan({ profileId, profile }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/planner/plan/${profileId}`);
+      const res = await fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/planner/plan/${profileId}`);
       if (!res.ok) throw new Error("Failed to load sessions.");
       const data = await res.json();
       setSessions(data.sessions ?? []);
@@ -69,23 +69,23 @@ export default function StudyPlan({ profileId, profile }) {
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`/syllabus/weak/${userId}`)
+    fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/syllabus/weak/${userId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) setFocusTopics(data.focus_topics || []);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [userId]);
 
   const handleMark = async (sessionId, status) => {
     try {
-      await fetch(`/planner/session/${sessionId}`, {
+      await fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/planner/session/${sessionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
       if (status === "missed") {
-        await fetch(`/planner/rebalance/${profileId}`, {
+        await fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/planner/rebalance/${profileId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(profile),
@@ -102,7 +102,7 @@ export default function StudyPlan({ profileId, profile }) {
       !(t.subject === topic.subject && t.chapter === topic.chapter && t.topic === topic.topic)
     ));
     try {
-      await fetch('/syllabus/toggle', {
+      await fetch('https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/syllabus/toggle', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,7 +118,7 @@ export default function StudyPlan({ profileId, profile }) {
   const handleRebalance = async () => {
     setLoading(true);
     try {
-      await fetch(`/planner/rebalance/${profileId}`, {
+      await fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/planner/rebalance/${profileId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profile),

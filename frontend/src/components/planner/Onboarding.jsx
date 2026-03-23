@@ -57,7 +57,7 @@ export default function Onboarding({ onComplete }) {
 
     setLoading(true);
     try {
-      const res = await fetch("/planner/onboard", {
+      const res = await fetch("https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/planner/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

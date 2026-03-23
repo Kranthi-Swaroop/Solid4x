@@ -15,14 +15,14 @@ export default function Dashboard() {
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
     Promise.all([
-      fetch(`/dashboard/stats/${userId}`).then(r => r.ok ? r.json() : null),
-      fetch(`/syllabus/progress/${userId}`).then(r => r.ok ? r.json() : null),
+      fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/dashboard/stats/${userId}`).then(r => r.ok ? r.json() : null),
+      fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/syllabus/progress/${userId}`).then(r => r.ok ? r.json() : null),
     ])
       .then(([dashData, sylData]) => {
         if (dashData) setStats(dashData);
         if (sylData) setSyllabusProg(sylData);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [userId]);
 
@@ -52,13 +52,13 @@ export default function Dashboard() {
   // Mark a task as done
   const handleTaskToggle = async (index, currentDone) => {
     try {
-      await fetch(`/planner/today/${userId}/task`, {
+      await fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/planner/today/${userId}/task`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_index: index, done: !currentDone }),
       });
       // Refresh stats
-      const res = await fetch(`/dashboard/stats/${userId}`);
+      const res = await fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/dashboard/stats/${userId}`);
       if (res.ok) setStats(await res.json());
     } catch (err) { console.error(err); }
   };

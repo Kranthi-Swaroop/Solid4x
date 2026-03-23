@@ -76,7 +76,7 @@ export default function Chatbot() {
 
   const playVoiceResponse = (text) => {
     if (isMuted) return;
-    
+
     if (currentAudioRef.current) {
       currentAudioRef.current.pause(); // stop previous audio if any
     }
@@ -86,7 +86,7 @@ export default function Chatbot() {
       const encodedText = encodeURIComponent(text);
       const audioUrl = `/api/tts?text=${encodedText}`;
       const audio = new Audio(audioUrl);
-      
+
       currentAudioRef.current = audio;
       audio.play().catch(err => console.error('Failed to play TTS audio', err));
     } catch (err) {
@@ -101,7 +101,7 @@ export default function Chatbot() {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: query }]);
     setLoading(true);
-    
+
     // Stop listening if user hits send manually
     if (isListening) {
       recognitionRef.current?.stop();
@@ -109,7 +109,7 @@ export default function Chatbot() {
     }
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('https://kimberly-lossy-lisette.ngrok-free.dev/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
@@ -169,8 +169,8 @@ export default function Chatbot() {
               <h4>AI Tutor</h4>
               <p>Ask any JEE doubt — powered by RAG</p>
             </div>
-            <button 
-              className="chatbot-mute-btn" 
+            <button
+              className="chatbot-mute-btn"
               onClick={toggleMute}
               title={isMuted ? "Unmute Voice" : "Mute Voice"}
               style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', marginLeft: 'auto' }}
@@ -187,8 +187,8 @@ export default function Chatbot() {
                 <p>Ask me any JEE Physics, Chemistry, or Math doubt. I'll answer from your textbooks.</p>
                 <div className="chatbot-suggestions">
                   {SUGGESTIONS.map((s, i) => (
-                    <button 
-                      key={i} 
+                    <button
+                      key={i}
                       className="chatbot-suggestion"
                       onClick={() => sendMessage(s)}
                     >
@@ -224,7 +224,7 @@ export default function Chatbot() {
           </div>
 
           <div className="chatbot-input-bar">
-            <button 
+            <button
               className={`chatbot-mic-btn ${isListening ? 'listening' : ''}`}
               onClick={toggleListening}
               title="Speak your doubt (Hindi/English)"
@@ -246,8 +246,8 @@ export default function Chatbot() {
               disabled={loading}
               style={{ flex: 1 }}
             />
-            <button 
-              className="chatbot-send-btn" 
+            <button
+              className="chatbot-send-btn"
               onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
             >

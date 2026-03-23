@@ -16,7 +16,7 @@ export default function VideoArena() {
     setData(null);
 
     try {
-      const res = await fetch('/api/v1/content/process-video', {
+      const res = await fetch('https://kimberly-lossy-lisette.ngrok-free.dev/api/v1/content/process-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url, target_language: lang }),
@@ -42,11 +42,11 @@ export default function VideoArena() {
         <h1>Multimodal Content Processor</h1>
         <p>Distraction-free learning with AI-generated notes & Indic dubbing.</p>
       </header>
-      
+
       <div className="video-controls">
-        <input 
-          type="text" 
-          placeholder="Paste YouTube URL here..." 
+        <input
+          type="text"
+          placeholder="Paste YouTube URL here..."
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="url-input"
@@ -79,7 +79,7 @@ export default function VideoArena() {
                 allowFullScreen
               />
             </div>
-            
+
             {data.audio_url && (
               <div className="audio-section">
                 <h3>Indic Summary Audio ({lang.toUpperCase()})</h3>

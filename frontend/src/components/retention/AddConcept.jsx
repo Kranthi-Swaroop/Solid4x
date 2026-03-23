@@ -12,7 +12,7 @@ export default function AddConcept({ profileId, onAdded }) {
     setLoading(true);
 
     try {
-      await fetch("/retention/card", {
+      await fetch("https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/retention/card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -32,11 +32,11 @@ export default function AddConcept({ profileId, onAdded }) {
 
   return (
     <form className="ret-add-form inline-form" onSubmit={handleSubmit}>
-      <input 
-        type="text" 
-        placeholder="Topic name (e.g. Kinematics)" 
-        value={topic} 
-        onChange={e => setTopic(e.target.value)} 
+      <input
+        type="text"
+        placeholder="Topic name (e.g. Kinematics)"
+        value={topic}
+        onChange={e => setTopic(e.target.value)}
         required
       />
       <select value={subject} onChange={e => setSubject(e.target.value)}>

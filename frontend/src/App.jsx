@@ -32,7 +32,7 @@ export default function App() {
     const userId = localStorage.getItem('profileId');
     if (!userId) { setNeedsOnboarding(true); return; }
     try {
-      const res = await fetch(`/planner/onboarding-status/${userId}`);
+      const res = await fetch(`https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/planner/onboarding-status/${userId}`);
       if (res.ok) {
         const data = await res.json();
         if (data.onboarding_completed) {

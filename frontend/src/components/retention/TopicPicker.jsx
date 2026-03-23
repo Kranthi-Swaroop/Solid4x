@@ -8,10 +8,10 @@ export default function TopicPicker({ profileId, onAdded }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/retention/topics-list")
+    fetch("https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/retention/topics-list")
       .then(res => res.ok ? res.json() : {})
       .then(data => setAllTopics(data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -30,7 +30,7 @@ export default function TopicPicker({ profileId, onAdded }) {
     if (selected.length === 0) return;
     setSubmitting(true);
     try {
-      await fetch("/retention/add-topics", {
+      await fetch("https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/retention/add-topics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: profileId, topics: selected }),

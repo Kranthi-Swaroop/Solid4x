@@ -9,7 +9,7 @@ function ConfirmModal({ topic, onConfirm, onCancel }) {
         <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📝</div>
         <h2 style={{ margin: '0 0 10px 0', color: '#343a40' }}>Start Practice Session?</h2>
         <p style={{ color: '#6c757d', fontSize: '1.05rem', lineHeight: '1.6', margin: '0 0 25px 0' }}>
-          You'll be given <strong>5 questions</strong> on <strong style={{ color: '#007bff' }}>{topic}</strong>. 
+          You'll be given <strong>5 questions</strong> on <strong style={{ color: '#007bff' }}>{topic}</strong>.
           Your results will update your knowledge graph.
         </p>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
@@ -103,7 +103,7 @@ export default function RetentionDashboard({ profileId }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/repetition/topics/status', {
+      const res = await fetch('https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/repetition/topics/status', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {

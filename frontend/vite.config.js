@@ -7,52 +7,36 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api/chat": {
-        target: "http://localhost:8002",
+        target: "https://kimberly-lossy-lisette.ngrok-free.dev",
         changeOrigin: true,
       },
       "/api/tts": {
-        target: "http://localhost:8002",
+        target: "https://kimberly-lossy-lisette.ngrok-free.dev",
         changeOrigin: true,
       },
       "/api": {
-        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
       "/planner": {
-        target: "http://localhost:8001",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
       "/retention": {
-        target: "http://localhost:8001",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
       "/dashboard": {
-        target: "http://localhost:8001",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
       "/syllabus": {
-        target: "http://localhost:8001",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
 
       "/static": {
-        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
-        changeOrigin: true,
-      },
-      "/syllabus": {
-        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
-        changeOrigin: true,
-      },
-      "/planner": {
-        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
-        changeOrigin: true,
-      },
-      "/retention": {
-        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
-        changeOrigin: true,
-      },
-      "/dashboard": {
-        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
     },
