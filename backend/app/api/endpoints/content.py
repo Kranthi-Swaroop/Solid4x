@@ -62,8 +62,6 @@ async def process_video(req: VideoProcessRequest):
             snippet = ytt_api.fetch(video_id, languages=[first_transcript.language_code])
             transcript_text = " ".join([entry.text for entry in snippet])
         except Exception as e:
-            err_msg = str(e).encode('ascii', 'ignore').decode('ascii')
-            raise HTTPException(status_code=400, detail=f"Could not retrieve transcript: {err_msg}")
             # FALLBACK to yt_dlp if youtube-transcript-api is completely IP Blocked by Google
             import yt_dlp
             import webvtt
@@ -143,7 +141,7 @@ async def process_video(req: VideoProcessRequest):
     # 3. Generate Indic Audio Dubbing
     audio_filename = f"{video_id}_{req.target_language}.mp3"
     audio_path = AUDIO_DIR / audio_filename
-    audio_url = f"/static/audio/{audio_filename}"
+    audio_url = f"http://100.121.38.82:8000/static/audio/{audio_filename}"
     voice_map = {
         "hi": "hi-IN-SwaraNeural",
         "te": "te-IN-ShrutiNeural",
