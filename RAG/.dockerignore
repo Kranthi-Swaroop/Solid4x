@@ -1,0 +1,15 @@
+# Dockerignore for RAG System
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+.DS_Store
+
+# Do not ignore chroma_db or index files if you want the container to be pre-trained!
+# If you want to train it dynamically, you would ignore these and map a volume.
+# chroma_db/
+# bm25_index.pkl
+# index_state.json
+
+# You can ignore the raw PDFs if you already have the chroma_db built
+# JEE/
