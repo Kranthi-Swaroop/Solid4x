@@ -23,14 +23,14 @@ def build_context(documents):
     context_parts = []
     for i, doc in enumerate(documents):
         meta = doc["metadata"]
-        book = meta.get("source_file", "Unknown").replace(".pdf", "")
+        book = meta.get("book_name", meta.get("source_file", "Unknown").replace(".pdf", ""))
         source = f"{book} | {meta['subject']} | Class {meta['class_level']} | {meta['chapter']} | Pages {meta.get('page_range', 'N/A')}"
         context_parts.append(f"[Source {i+1}: {source}]\n{doc['text']}")
     return "\n\n---\n\n".join(context_parts)
 
 
 def format_source(meta):
-    book = meta.get("source_file", "Unknown").replace(".pdf", "")
+    book = meta.get("book_name", meta.get("source_file", "Unknown").replace(".pdf", ""))
     return f"{book} | {meta['subject']} Class {meta['class_level']} | {meta['chapter']} | Pages {meta.get('page_range', 'N/A')}"
 
 
