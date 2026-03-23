@@ -8,10 +8,11 @@ export default function Syllabus() {
 
   const [syllabus, setSyllabus] = useState({});
   const [completed, setCompleted] = useState([]);
+  const [weakTopics, setWeakTopics] = useState([]);
   const [totalTopics, setTotalTopics] = useState(0);
   const [loading, setLoading] = useState(true);
   const [expandedChapters, setExpandedChapters] = useState({});
-  const [activeSubject, setActiveSubject] = useState('Physics');
+  const [activeSubject, setActiveSubject] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -22,22 +23,29 @@ export default function Syllabus() {
       .then(([syllabusData, progressData]) => {
         setSyllabus(syllabusData);
         setCompleted(progressData.completed || []);
+        setWeakTopics(progressData.weak_topics || []);
         setTotalTopics(progressData.total_topics || 0);
+        // Set first subject active
+        const subjects = Object.keys(syllabusData);
+        if (subjects.length > 0) setActiveSubject(subjects[0]);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [userId]);
 
+  const makeKey = (subject, chapter, topic) => `${subject}|${chapter}|${topic}`;
+
   const isCompleted = (subject, chapter, topic) =>
-    completed.includes(`${subject}|${chapter}|${topic}`);
+    completed.includes(makeKey(subject, chapter, topic));
+
+  const isWeak = (subject, chapter, topic) =>
+    weakTopics.includes(makeKey(subject, chapter, topic));
 
   const toggleTopic = async (subject, chapter, topic) => {
-    const key = `${subject}|${chapter}|${topic}`;
-    // Optimistic update
+    const key = makeKey(subject, chapter, topic);
     setCompleted(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
-
     try {
       const res = await fetch('/syllabus/toggle', {
         method: 'PATCH',
@@ -48,9 +56,66 @@ export default function Syllabus() {
         const data = await res.json();
         setCompleted(data.completed);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err) { console.error(err); }
+  };
+
+  const bulkToggle = async (keys, action) => {
+    // Optimistic update
+    setCompleted(prev => {
+      const s = new Set(prev);
+      if (action === 'select') keys.forEach(k => s.add(k));
+      else keys.forEach(k => s.delete(k));
+      return [...s];
+    });
+    try {
+      const res = await fetch('/syllabus/bulk-toggle', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, keys, action }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCompleted(data.completed);
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const selectAllChapter = (subject, chapter, topics) => {
+    const keys = topics.map(t => makeKey(subject, chapter, t.name));
+    const allDone = keys.every(k => completed.includes(k));
+    bulkToggle(keys, allDone ? 'deselect' : 'select');
+  };
+
+  const selectAllSubject = (subject) => {
+    const groups = syllabus[subject] || [];
+    const keys = [];
+    for (const g of groups)
+      for (const ch of g.chapters)
+        for (const t of ch.topics)
+          keys.push(makeKey(subject, ch.chapter, t.name));
+    const allDone = keys.every(k => completed.includes(k));
+    bulkToggle(keys, allDone ? 'deselect' : 'select');
+  };
+
+  const setStrength = async (subject, chapter, topic, strength) => {
+    const key = makeKey(subject, chapter, topic);
+    // Optimistic
+    if (strength === 'weak') {
+      setWeakTopics(prev => prev.includes(key) ? prev : [...prev, key]);
+    } else {
+      setWeakTopics(prev => prev.filter(k => k !== key));
     }
+    try {
+      const res = await fetch('/syllabus/set-strength', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, subject, chapter, topic, strength }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWeakTopics(data.weak_topics);
+      }
+    } catch (err) { console.error(err); }
   };
 
   const toggleChapter = (chapterKey) => {
@@ -63,15 +128,14 @@ export default function Syllabus() {
 
   const subjectStats = useMemo(() => {
     const stats = {};
-    const subjects = Object.keys(syllabus);
-    for (const subject of subjects) {
-      const chapters = syllabus[subject] || [];
-      let total = 0;
-      let done = 0;
-      for (const ch of chapters) {
-        total += ch.topics.length;
-        for (const t of ch.topics) {
-          if (isCompleted(subject, ch.chapter, t)) done++;
+    for (const [subject, groups] of Object.entries(syllabus)) {
+      let total = 0, done = 0;
+      for (const group of groups) {
+        for (const ch of group.chapters) {
+          total += ch.topics.length;
+          for (const t of ch.topics) {
+            if (isCompleted(subject, ch.chapter, t.name)) done++;
+          }
         }
       }
       stats[subject] = { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
@@ -80,18 +144,21 @@ export default function Syllabus() {
   }, [syllabus, completed]);
 
   // Filtered chapters based on search
-  const filteredChapters = useMemo(() => {
-    const chapters = syllabus[activeSubject] || [];
-    if (!searchQuery.trim()) return chapters;
+  const filteredGroups = useMemo(() => {
+    const groups = syllabus[activeSubject] || [];
+    if (!searchQuery.trim()) return groups;
     const q = searchQuery.toLowerCase();
-    return chapters
-      .map(ch => ({
-        ...ch,
-        topics: ch.topics.filter(t =>
-          t.toLowerCase().includes(q) || ch.chapter.toLowerCase().includes(q)
-        ),
-      }))
-      .filter(ch => ch.topics.length > 0);
+    return groups.map(g => ({
+      ...g,
+      chapters: g.chapters
+        .map(ch => ({
+          ...ch,
+          topics: ch.topics.filter(t =>
+            t.name.toLowerCase().includes(q) || ch.chapter.toLowerCase().includes(q)
+          ),
+        }))
+        .filter(ch => ch.topics.length > 0),
+    })).filter(g => g.chapters.length > 0);
   }, [syllabus, activeSubject, searchQuery]);
 
   if (loading) {
@@ -110,7 +177,7 @@ export default function Syllabus() {
         <div>
           <button className="syl-back-btn" onClick={() => navigate('/')}>← Dashboard</button>
           <h1 className="syl-title">JEE Syllabus Tracker</h1>
-          <p className="syl-subtitle">Track your progress across every topic</p>
+          <p className="syl-subtitle">Track your progress &amp; mark weak areas</p>
         </div>
         <div className="syl-overall-progress">
           <div className="syl-overall-ring">
@@ -150,6 +217,18 @@ export default function Syllabus() {
           );
         })}
       </div>
+      {/* Subject-level select/deselect all */}
+      {activeSubject && (() => {
+        const st = subjectStats[activeSubject] || { done: 0, total: 0 };
+        const allDone = st.done === st.total && st.total > 0;
+        return (
+          <div className="syl-bulk-bar">
+            <button className="syl-bulk-btn" onClick={() => selectAllSubject(activeSubject)}>
+              {allDone ? '☐ Deselect All' : '☑ Select All'} in {activeSubject}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ── Search ── */}
       <div className="syl-search-bar">
@@ -162,63 +241,99 @@ export default function Syllabus() {
         />
       </div>
 
-      {/* ── Chapters ── */}
-      <div className="syl-chapters">
-        {filteredChapters.map((ch, ci) => {
-          const chKey = `${activeSubject}|${ch.chapter}`;
-          const isOpen = expandedChapters[chKey] !== false; // default open
-          const chapterDone = ch.topics.filter(t => isCompleted(activeSubject, ch.chapter, t)).length;
-          const chapterTotal = ch.topics.length;
-          const chapterPct = chapterTotal > 0 ? Math.round((chapterDone / chapterTotal) * 100) : 0;
-
-          return (
-            <div className="syl-chapter" key={chKey}>
-              <div className="syl-chapter-header" onClick={() => toggleChapter(chKey)}>
-                <div className="syl-chapter-left">
-                  <span className={`syl-chevron ${isOpen ? 'open' : ''}`}>▶</span>
-                  <div>
-                    <div className="syl-chapter-name">
-                      {ci + 1}. {ch.chapter}
-                    </div>
-                    <div className="syl-chapter-meta">{chapterDone}/{chapterTotal} topics completed</div>
-                  </div>
-                </div>
-                <div className="syl-chapter-right">
-                  <div className="syl-chapter-bar">
-                    <div
-                      className="syl-chapter-bar-fill"
-                      style={{
-                        width: `${chapterPct}%`,
-                        background: chapterPct === 100 ? '#22c55e' : '#3b82f6',
-                      }}
-                    />
-                  </div>
-                  <span className="syl-chapter-pct">{chapterPct}%</span>
-                </div>
-              </div>
-
-              {isOpen && (
-                <div className="syl-topics">
-                  {ch.topics.map(topic => {
-                    const done = isCompleted(activeSubject, ch.chapter, topic);
-                    return (
-                      <label key={topic} className={`syl-topic ${done ? 'done' : ''}`}>
-                        <input
-                          type="checkbox"
-                          checked={done}
-                          onChange={() => toggleTopic(activeSubject, ch.chapter, topic)}
-                        />
-                        <span className="syl-topic-check">{done ? '✓' : ''}</span>
-                        <span className="syl-topic-text">{topic}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* ── Legend ── */}
+      <div className="syl-legend">
+        <span className="syl-legend-item"><span className="syl-legend-dot strong" /> Strong</span>
+        <span className="syl-legend-item"><span className="syl-legend-dot weak" /> Weak</span>
+        <span className="syl-legend-item"><span className="syl-legend-dot completed" /> Completed</span>
       </div>
+
+      {/* ── Groups & Chapters ── */}
+      {filteredGroups.map(group => (
+        <div key={group.group} className="syl-group">
+          <h2 className="syl-group-title">{group.group}</h2>
+          <div className="syl-chapters">
+            {group.chapters.map((ch, ci) => {
+              const chKey = `${activeSubject}|${ch.chapter}`;
+              const isOpen = expandedChapters[chKey] !== false;
+              const chDone = ch.topics.filter(t => isCompleted(activeSubject, ch.chapter, t.name)).length;
+              const chTotal = ch.topics.length;
+              const chPct = chTotal > 0 ? Math.round((chDone / chTotal) * 100) : 0;
+              const chWeak = ch.topics.filter(t => isWeak(activeSubject, ch.chapter, t.name)).length;
+
+              return (
+                <div className="syl-chapter" key={chKey}>
+                  <div className="syl-chapter-header" onClick={() => toggleChapter(chKey)}>
+                    <div className="syl-chapter-left">
+                      <span className={`syl-chevron ${isOpen ? 'open' : ''}`}>▶</span>
+                      <div>
+                        <div className="syl-chapter-name">{ch.chapter}</div>
+                        <div className="syl-chapter-meta">
+                          {chDone}/{chTotal} done
+                          {chWeak > 0 && <span className="syl-chapter-weak-badge"> · {chWeak} weak</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="syl-chapter-right">
+                      <div className="syl-chapter-bar">
+                        <div className="syl-chapter-bar-fill" style={{
+                          width: `${chPct}%`,
+                          background: chPct === 100 ? '#22c55e' : '#3b82f6',
+                        }} />
+                      </div>
+                      <span className="syl-chapter-pct">{chPct}%</span>
+                    </div>
+                  </div>
+
+                  {isOpen && (
+                    <div className="syl-topics">
+                      <div className="syl-ch-bulk-bar">
+                        <button
+                          className="syl-ch-bulk-btn"
+                          onClick={(e) => { e.stopPropagation(); selectAllChapter(activeSubject, ch.chapter, ch.topics); }}
+                        >
+                          {chDone === chTotal ? '☐ Deselect All' : '☑ Select All'}
+                        </button>
+                      </div>
+                      {ch.topics.map(topic => {
+                        const done = isCompleted(activeSubject, ch.chapter, topic.name);
+                        const weak = isWeak(activeSubject, ch.chapter, topic.name);
+                        const strong = !weak && done;
+
+                        return (
+                          <div key={topic.slug} className={`syl-topic ${done ? 'done' : ''} ${weak ? 'is-weak' : ''}`}>
+                            <label className="syl-topic-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={done}
+                                onChange={() => toggleTopic(activeSubject, ch.chapter, topic.name)}
+                              />
+                              <span className="syl-topic-check">{done ? '✓' : ''}</span>
+                            </label>
+                            <span className="syl-topic-text">{topic.name}</span>
+                            <div className="syl-strength-btns">
+                              <button
+                                className={`syl-str-btn strong ${!weak ? 'active' : ''}`}
+                                onClick={() => setStrength(activeSubject, ch.chapter, topic.name, 'strong')}
+                                title="Mark as Strong"
+                              >💪 Strong</button>
+                              <button
+                                className={`syl-str-btn weak ${weak ? 'active' : ''}`}
+                                onClick={() => setStrength(activeSubject, ch.chapter, topic.name, 'weak')}
+                                title="Mark as Weak"
+                              >⚠️ Weak</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

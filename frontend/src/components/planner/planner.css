@@ -405,6 +405,258 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
+   Focus Areas — Card UI with Filters
+   ══════════════════════════════════════════════════════════════ */
+.sp-focus-section {
+  margin: 0 24px 20px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.sp-focus-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  cursor: pointer;
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  transition: background 0.1s;
+}
+.sp-focus-header:hover { background: #fef9c3; }
+.sp-focus-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp-focus-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.sp-focus-badge.weak {
+  background: #fde68a;
+  color: #92400e;
+}
+.sp-focus-badge.incomplete {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.sp-focus-toggle {
+  font-size: 12px;
+  color: #92400e;
+  font-weight: 600;
+}
+
+/* Filter Bar */
+.sp-focus-body {
+  padding: 16px 20px;
+}
+.sp-filter-bar {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sp-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sp-filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  min-width: 56px;
+  flex-shrink: 0;
+}
+.sp-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sp-pill-btn {
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #cbd5e1;
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sp-pill-btn:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+.sp-pill-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+.sp-pill-btn.sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.sp-filter-select {
+  flex: 1;
+  max-width: 320px;
+  padding: 6px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  background: white;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+.sp-filter-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+/* Results count */
+.sp-focus-results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Topic Cards */
+.sp-focus-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.sp-focus-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #60a5fa;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.sp-focus-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+.sp-fc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.sp-fc-subject-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+.sp-fc-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.sp-fc-status.weak {
+  background: #fef3c7;
+  color: #92400e;
+}
+.sp-fc-status.incomplete {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.sp-fc-status.completed {
+  background: #dcfce7;
+  color: #166534;
+}
+.sp-fc-topic {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+.sp-fc-chapter {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.sp-fc-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sp-fc-complete-btn {
+  padding: 4px 12px;
+  border: 1.5px solid #22c55e;
+  border-radius: 6px;
+  background: white;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sp-fc-complete-btn:hover {
+  background: #22c55e;
+  color: white;
+}
+
+/* Show more / Empty */
+.sp-focus-show-more {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 14px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 8px;
+  background: transparent;
+  color: #3b82f6;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.sp-focus-show-more:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+.sp-focus-empty {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+/* ══════════════════════════════════════════════════════════════
    Responsive — single column below 600px
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
@@ -434,4 +686,20 @@
     bottom: 16px;
     right: 16px;
   }
+
+  .sp-focus-section {
+    margin: 0 12px 16px;
+  }
+  .sp-filter-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sp-filter-select {
+    max-width: 100%;
+    width: 100%;
+  }
+  .sp-focus-cards {
+    grid-template-columns: 1fr;
+  }
 }
+
