@@ -17,8 +17,8 @@ export default function Syllabus() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/syllabus/full').then(r => r.json()),
-      fetch(`/syllabus/progress/${userId}`).then(r => r.json()),
+      fetch('/api/v1/syllabus/full').then(r => r.json()),
+      fetch(`/api/v1/syllabus/progress/${userId}`).then(r => r.json()),
     ])
       .then(([syllabusData, progressData]) => {
         setSyllabus(syllabusData);
@@ -47,7 +47,7 @@ export default function Syllabus() {
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
     try {
-      const res = await fetch('/syllabus/toggle', {
+      const res = await fetch('/api/v1/syllabus/toggle', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, subject, chapter, topic }),
@@ -68,7 +68,7 @@ export default function Syllabus() {
       return [...s];
     });
     try {
-      const res = await fetch('/syllabus/bulk-toggle', {
+      const res = await fetch('/api/v1/syllabus/bulk-toggle', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, keys, action }),
@@ -106,7 +106,7 @@ export default function Syllabus() {
       setWeakTopics(prev => prev.filter(k => k !== key));
     }
     try {
-      const res = await fetch('/syllabus/set-strength', {
+      const res = await fetch('/api/v1/syllabus/set-strength', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, subject, chapter, topic, strength }),
