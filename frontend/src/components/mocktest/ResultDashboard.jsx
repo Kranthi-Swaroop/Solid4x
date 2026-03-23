@@ -37,8 +37,10 @@ export default function ResultDashboard({ allQuestions, answers, times, question
     : 0;
 
   const formatTime = (sec) => {
-    const m = Math.floor(sec / 60);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
     return `${m}m ${s}s`;
   };
 

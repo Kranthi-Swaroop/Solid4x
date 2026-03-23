@@ -1,4 +1,5 @@
-export { calcSubjectScore, scoreQuestion } from './scoring'
+import { extractIntegerAnswer } from './scoring'
+export { calcSubjectScore, scoreQuestion, extractIntegerAnswer } from './scoring'
 
 export function analyzeConceptStrength(questions, answers, times) {
   const conceptMap = {}
@@ -39,9 +40,11 @@ function scoreQuestion_inline(q, ans) {
   if (!ans && ans !== 0) return { verdict: 'unattempted' }
   if (q.type === 'mcq')
     return { verdict: ans === q.correct_options[0] ? 'correct' : 'incorrect' }
-  if (q.type === 'integer')
-    return { verdict: parseInt(ans) === parseInt(q.correct_answer) 
-             ? 'correct' : 'incorrect' }
+  if (q.type === 'integer') {
+    const extAns = extractIntegerAnswer(q);
+    if (!extAns) return { verdict: 'incorrect' };
+    return { verdict: parseInt(ans) === parseInt(extAns) ? 'correct' : 'incorrect' };
+  }
   return { verdict: 'unattempted' }
 }
 

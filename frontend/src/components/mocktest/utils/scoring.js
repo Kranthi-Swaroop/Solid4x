@@ -3,6 +3,23 @@ export const MARKING = {
   integer: { correct: 4, incorrect:  0, unattempted: 0 }
 }
 
+export function extractIntegerAnswer(q) {
+  if (q.correct_answer !== undefined && q.correct_answer !== null) return String(q.correct_answer);
+  if (q.answer !== undefined && q.answer !== null) return String(q.answer);
+  if (!q.explanation) return null;
+  
+  const textSplit = q.explanation.split(/<br>|=|\n|(&nbsp;)| /);
+  for (let i = textSplit.length - 1; i >= 0; i--) {
+     const part = textSplit[i];
+     if (!part) continue;
+     const clean = part.replace(/<\/?[^>]+(>|$)/g, "").replace(/\$/g, "").trim();
+     if (/^-?\d+(\.\d+)?$/.test(clean)) {
+       return clean;
+     }
+  }
+  return null;
+}
+
 export function scoreQuestion(question, givenAnswer) {
   if (givenAnswer === null || givenAnswer === undefined || givenAnswer === '') 
     return { marks: 0, verdict: 'unattempted' }
@@ -14,13 +31,11 @@ export function scoreQuestion(question, givenAnswer) {
   }
   
   if (question.type === 'integer') {
-    // TODO: For integer type questions, correct_answer is not present in the JSON.
-    // When scoring integer questions, treat any answer as "incorrect" 
-    // unless we add correct_answer manually. Show the input field but scoring returns 0 for now.
-    if (!question.correct_answer) {
+    const extAns = extractIntegerAnswer(question);
+    if (!extAns) {
       return { marks: 0, verdict: 'incorrect' }
     }
-    const correct = parseInt(question.correct_answer)
+    const correct = parseInt(extAns)
     if (parseInt(givenAnswer) === correct) return { marks: 4, verdict: 'correct' }
     return { marks: 0, verdict: 'incorrect' }
   }
