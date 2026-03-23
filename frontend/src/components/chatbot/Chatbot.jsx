@@ -18,10 +18,21 @@ export default function Chatbot() {
   const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const recognitionRef = useRef(null);
+  const currentAudioRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  const toggleMute = () => {
+    setIsMuted(prev => {
+      const nextMuted = !prev;
+      if (nextMuted && currentAudioRef.current) {
+        currentAudioRef.current.pause(); // Instantly kill playing audio
+      }
+      return nextMuted;
+    });
+  };
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -63,20 +74,23 @@ export default function Chatbot() {
     }
   };
 
-  const playVoiceResponse = async (text) => {
+  const playVoiceResponse = (text) => {
     if (isMuted) return;
+    
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause(); // stop previous audio if any
+    }
+
     try {
-      const res = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
+      // Stream instantly by setting the native Audio source directly to our GET endpoint
+      const encodedText = encodeURIComponent(text);
+      const audioUrl = `/api/tts?text=${encodedText}`;
       const audio = new Audio(audioUrl);
-      audio.play();
+      
+      currentAudioRef.current = audio;
+      audio.play().catch(err => console.error('Failed to play TTS audio', err));
     } catch (err) {
-      console.error('Failed to play TTS audio', err);
+      console.error('Failed to setup native audio', err);
     }
   };
 
@@ -157,7 +171,7 @@ export default function Chatbot() {
             </div>
             <button 
               className="chatbot-mute-btn" 
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={toggleMute}
               title={isMuted ? "Unmute Voice" : "Mute Voice"}
               style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', marginLeft: 'auto' }}
             >

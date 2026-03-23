@@ -58,12 +58,16 @@ class TTSRequest(BaseModel):
     text: str
 
 @app.post("/api/tts")
-async def generate_tts(req: TTSRequest):
-    if not req.text.strip():
+@app.get("/api/tts")
+async def generate_tts(text: str = None, req: TTSRequest = None):
+    # Support both GET query parameter and POST block body text
+    content = text if text else (req.text if req else "")
+
+    if not content or not content.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
     
     # Strip markdown and source citations so the voice doesn't read them
-    clean_text = re.sub(r'\[Source \d+:.*?\]', '', req.text)
+    clean_text = re.sub(r'\[Source \d+:.*?\]', '', content)
     clean_text = clean_text.replace("*", "").replace("#", "")
     
     # Create the edge-tts communicator with a premium Hindi voice
