@@ -1,35 +1,42 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getStructuredSyllabus, getTotalTopicCount } from './syllabusData';
 import './syllabus.css';
 
 export default function Syllabus() {
   const navigate = useNavigate();
   const userId = localStorage.getItem('profileId') || '';
 
-  const [syllabus, setSyllabus] = useState({});
+  const syllabusData = useMemo(() => getStructuredSyllabus(), []);
+  const totalTopicCount = useMemo(() => getTotalTopicCount(), []);
+
+  const [syllabus] = useState(syllabusData);
   const [completed, setCompleted] = useState([]);
   const [weakTopics, setWeakTopics] = useState([]);
-  const [totalTopics, setTotalTopics] = useState(0);
+  const [totalTopics] = useState(totalTopicCount);
   const [loading, setLoading] = useState(true);
   const [expandedChapters, setExpandedChapters] = useState({});
-  const [activeSubject, setActiveSubject] = useState('');
+  const [activeSubject, setActiveSubject] = useState(() => {
+    const subjects = Object.keys(syllabusData);
+    return subjects.length > 0 ? subjects[0] : '';
+  });
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/v1/syllabus/full').then(r => r.json()),
-      fetch(`/api/v1/syllabus/progress/${userId}`).then(r => r.json()),
-    ])
-      .then(([syllabusData, progressData]) => {
-        setSyllabus(syllabusData);
+    // Only fetch progress from backend; syllabus structure is local
+    fetch(`/api/v1/syllabus/progress/${userId}`)
+      .then(r => r.ok ? r.json() : { completed: [], weak_topics: [] })
+      .then(progressData => {
         setCompleted(progressData.completed || []);
         setWeakTopics(progressData.weak_topics || []);
-        setTotalTopics(progressData.total_topics || 0);
-        // Set first subject active
-        const subjects = Object.keys(syllabusData);
-        if (subjects.length > 0) setActiveSubject(subjects[0]);
       })
-      .catch(console.error)
+      .catch(() => {
+        // If backend is unavailable, load from localStorage as fallback
+        const saved = localStorage.getItem('syllabus_completed');
+        const savedWeak = localStorage.getItem('syllabus_weak');
+        if (saved) setCompleted(JSON.parse(saved));
+        if (savedWeak) setWeakTopics(JSON.parse(savedWeak));
+      })
       .finally(() => setLoading(false));
   }, [userId]);
 
