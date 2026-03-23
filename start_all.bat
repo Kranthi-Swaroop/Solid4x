@@ -4,6 +4,9 @@ echo Starting Solid4x System...
 :: Start Backend
 start cmd /k "cd backend && python -m uvicorn app.main:app --reload --port 8000"
 
+:: Start RAG AI Tutor Server
+start cmd /k "cd RAG && python -m uvicorn server:app --reload --port 8002"
+
 :: Start Frontend
 start cmd /k "cd frontend && npm run dev"
 

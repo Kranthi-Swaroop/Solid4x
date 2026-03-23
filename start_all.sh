@@ -4,6 +4,9 @@ echo "Starting Solid4x System..."
 # Start Backend
 cd backend && python -m uvicorn app.main:app --reload --port 8000 &
 
+# Start RAG AI Tutor Server
+cd ../RAG && python -m uvicorn server:app --reload --port 8002 &
+
 # Start Frontend
 cd ../frontend && npm run dev &
 
