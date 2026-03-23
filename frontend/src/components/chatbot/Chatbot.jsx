@@ -15,9 +15,70 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  const [isListening, setIsListening] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const recognitionRef = useRef(null);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'hi-IN'; // Native Hindi support
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+        if (finalTranscript) {
+          setInput(finalTranscript);
+          sendMessage(finalTranscript); // Auto-send when finished speaking
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, [isListening]); // rebind if needed, but acts as init
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      setInput(''); // clear previous text before speaking
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
+  const playVoiceResponse = async (text) => {
+    if (isMuted) return;
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (err) {
+      console.error('Failed to play TTS audio', err);
+    }
+  };
 
   const sendMessage = async (text) => {
     const query = text || input.trim();
@@ -26,6 +87,12 @@ export default function Chatbot() {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: query }]);
     setLoading(true);
+    
+    // Stop listening if user hits send manually
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    }
 
     try {
       const res = await fetch('/api/chat', {
@@ -46,6 +113,10 @@ export default function Chatbot() {
         sources: data.sources,
         numChunks: data.num_chunks,
       }]);
+
+      // Play the audio automatically
+      playVoiceResponse(data.answer);
+
     } catch (err) {
       setMessages(prev => [...prev, {
         role: 'ai',
@@ -84,6 +155,14 @@ export default function Chatbot() {
               <h4>AI Tutor</h4>
               <p>Ask any JEE doubt — powered by RAG</p>
             </div>
+            <button 
+              className="chatbot-mute-btn" 
+              onClick={() => setIsMuted(!isMuted)}
+              title={isMuted ? "Unmute Voice" : "Mute Voice"}
+              style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', marginLeft: 'auto' }}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
           </div>
 
           <div className="chatbot-messages">
@@ -131,6 +210,19 @@ export default function Chatbot() {
           </div>
 
           <div className="chatbot-input-bar">
+            <button 
+              className={`chatbot-mic-btn ${isListening ? 'listening' : ''}`}
+              onClick={toggleListening}
+              title="Speak your doubt (Hindi/English)"
+              style={{
+                background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer',
+                color: isListening ? '#ff4d4f' : '#64748b',
+                padding: '0 8px',
+                animation: isListening ? 'pulse 1.5s infinite' : 'none'
+              }}
+            >
+              🎙️
+            </button>
             <input
               type="text"
               placeholder="Ask a JEE doubt..."
@@ -138,6 +230,7 @@ export default function Chatbot() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={loading}
+              style={{ flex: 1 }}
             />
             <button 
               className="chatbot-send-btn" 
