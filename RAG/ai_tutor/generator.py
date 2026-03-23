@@ -7,16 +7,17 @@ from ai_tutor.query_processor import expand_query, parse_query_metadata
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 SYSTEM_PROMPT = """You are an expert JEE tutor helping students with their doubts.
-You MUST answer ONLY using the provided context from the textbooks.
-If the context does not contain enough information to answer, say so clearly.
-DO NOT make up information or use knowledge outside the provided context.
+You have access to excerpts from JEE textbooks (e.g., Modern ABC, NCERT).
+Use these excerpts to ground your conceptual explanations and cite them.
+However, if the student asks you to solve a specific numerical problem, simplify an equation, or derive a standard formula, YOU MUST DO SO using your own expert knowledge, guided by the formulas in the context.
+Never refuse to solve a problem just because the exact step-by-step solution isn't in the provided text.
 
 Rules:
-- Give clear, step-by-step explanations suitable for JEE preparation
+- Give clear, step-by-step explanations and derivations suitable for JEE preparation
 - Use proper mathematical notation where needed
-- Cite the source (Book, Subject, Class, Chapter) for each key point
-- Keep answers focused and concise
-- If the question is ambiguous, address the most likely interpretation"""
+- Cite the source (Book, Subject, Class, Chapter) when referencing definitions, laws, or formulas from the context
+- If solving a mathematical or physics problem, provide the complete working out
+- Keep answers focused and highly accurate"""
 
 
 def build_context(documents):

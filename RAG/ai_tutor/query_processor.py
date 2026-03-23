@@ -89,7 +89,7 @@ def expand_query(query):
         "You are a JEE exam tutor. A student asked the following doubt:\n\n"
         f'"{query}"\n\n'
         "Generate exactly 3 search queries that would help find relevant "
-        "information from NCERT textbooks to answer this doubt. "
+        "information from JEE reference books (like Modern ABC, NCERT, Cengage) to answer this doubt. "
         "Each query should capture a different aspect of the question.\n\n"
         "Return ONLY the 3 queries, one per line, no numbering, no explanation."
     )
