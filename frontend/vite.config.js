@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
       "/planner": {
