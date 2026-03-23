@@ -16,7 +16,7 @@ export default function VideoArena() {
     setData(null);
 
     try {
-      const res = await fetch('https://kimberly-lossy-lisette.ngrok-free.dev/api/v1/content/process-video', {
+      const res = await fetch('https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app/api/v1/content/process-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url, target_language: lang }),

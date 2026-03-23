@@ -9,12 +9,24 @@ def user_profiles_col(): return db.client["solid4x_db"]["user_profiles"]
 def study_plans_col(): return db.client["solid4x_db"]["study_plans"]
 def dashboard_cache_col(): return db.client["solid4x_db"]["dashboard_cache"]
 def retention_concepts_col(): return db.client["solid4x_db"]["retention_concepts"]
+def mock_tests_col(): return db.client["solid4x_db"]["mock_tests"]
 
 @router.get("/stats/{user_id}")
 async def get_dashboard_stats(user_id: str):
     profile = await user_profiles_col().find_one({"user_id": user_id})
-    cache = await dashboard_cache_col().find_one({"user_id": user_id})
     plan = await study_plans_col().find_one({"user_id": user_id})
+
+    # Dynamically compute the absolute average of all completed mock tests
+    completed_tests = await mock_tests_col().find({
+        "user_id": user_id, 
+        "status": "completed", 
+        "score": {"$exists": True}
+    }).to_list(length=100)
+    
+    mock_test_avg = 0
+    if completed_tests:
+        total_score = sum(float(t.get("score", 0)) for t in completed_tests)
+        mock_test_avg = int(round(total_score / len(completed_tests)))
 
     now = datetime.utcnow()
     due_count = await retention_concepts_col().count_documents({
@@ -65,7 +77,7 @@ async def get_dashboard_stats(user_id: str):
         },
         "flashcards_due": due_count,
         "due_breakdown": due_breakdown,
-        "mock_test_avg": cache.get("mock_test_avg", 0) if cache else 0,
+        "mock_test_avg": mock_test_avg,
         "syllabus_coverage": syl.get("coverage", 0),
         "streak": streak,
         "today_plan": today_plan,
