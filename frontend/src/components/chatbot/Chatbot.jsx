@@ -84,7 +84,7 @@ export default function Chatbot() {
     try {
       // Stream instantly by setting the native Audio source directly to our GET endpoint
       const encodedText = encodeURIComponent(text);
-      const audioUrl = `/api/tts?text=${encodedText}`;
+      const audioUrl = `https://kimberly-lossy-lisette.ngrok-free.dev/api/tts?text=${encodedText}`;
       const audio = new Audio(audioUrl);
 
       currentAudioRef.current = audio;

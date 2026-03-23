@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import practice, repetition, tests, analysis, solver, users, planner, flashcards, content, syllabus
+from app.api.endpoints import practice, repetition, tests, analysis, solver, users, planner, flashcards, content, syllabus, dashboard
 
 api_router = APIRouter()
 
@@ -13,3 +13,4 @@ api_router.include_router(planner.router, prefix="/planner", tags=["study planne
 api_router.include_router(flashcards.router, prefix="/flashcards", tags=["retention flashcards"])
 api_router.include_router(content.router, prefix="/content", tags=["multimodal video content"])
 api_router.include_router(syllabus.router, prefix="/syllabus", tags=["syllabus tracker"])
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard analytics"])
