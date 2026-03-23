@@ -27,3 +27,8 @@ async def log_review(log: ReviewLog, user_id: str = Depends(get_current_user)):
 async def get_unpracticed_topics(subject: str, user_id: str = Depends(get_current_user)):
     topics = await SpacedRepetitionService.get_unpracticed_topics(user_id, subject)
     return {"unpracticed_topics": topics}
+
+@router.get("/topics/status")
+async def get_topics_status(user_id: str = Depends(get_current_user)):
+    return await SpacedRepetitionService.get_topics_status(user_id)
+

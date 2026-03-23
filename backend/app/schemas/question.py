@@ -4,8 +4,8 @@ from typing import List, Optional, Any, Union
 class QuestionBase(BaseModel):
     subject: str
     chapter: str
-    topic: str
-    difficulty: str
+    topic: Optional[str] = None
+    difficulty: Optional[str] = None
     question_text: str
     type: Optional[str] = None
     year: Optional[Union[str, int]] = None
