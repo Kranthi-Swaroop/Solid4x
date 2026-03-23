@@ -15,8 +15,8 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemma-3-27b-it")
 EMBEDDING_MODEL = "all-mpnet-base-v2"
 EMBEDDING_DIMENSIONS = 768
 
-CHUNK_SIZE = 2000
-CHUNK_OVERLAP = 400
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 200
 COLLECTION_NAME = "jee_docs"
 
 SUBJECTS = {"Physics": "Physics", "Chemistry": "Chemistry", "Maths": "Mathematics"}

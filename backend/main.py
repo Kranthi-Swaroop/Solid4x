@@ -15,8 +15,10 @@ from pydantic import BaseModel
 from typing import Optional
 from database import (
     user_profiles_col, study_plans_col,
-    retention_concepts_col, retention_reviews_col, dashboard_cache_col
+    retention_concepts_col, retention_reviews_col, dashboard_cache_col,
+    syllabus_progress_col, study_sessions_col
 )
+from syllabus_data import get_structured_syllabus, get_total_topic_count
 
 app = FastAPI(title="Solid4x Backend")
 
@@ -211,6 +213,127 @@ def mark_task_done(user_id: str, req: TaskDoneRequest):
         )
         return {"ok": True, "today": today}
     raise HTTPException(status_code=400, detail="Invalid task index")
+
+
+# ══════════════════════════════════════════════════════════
+# PLANNER — 7-day session plan
+# ══════════════════════════════════════════════════════════
+
+def _build_7day_sessions(user_id):
+    """Generate a 7-day study session plan ONLY from topics marked weak in syllabus."""
+    import random
+    from bson import ObjectId
+
+    # Only use topics the user explicitly marked as weak
+    syl_doc = syllabus_progress_col().find_one({"user_id": user_id})
+    weak = set(syl_doc.get("weak_topics", [])) if syl_doc else set()
+
+    if not weak:
+        return []  # nothing selected yet
+
+    syl = get_structured_syllabus()
+    topics_pool = []
+    for subject, groups in syl.items():
+        for g in groups:
+            for ch in g["chapters"]:
+                for t in ch["topics"]:
+                    key = f"{subject}|{ch['chapter']}|{t['name']}"
+                    if key in weak:
+                        topics_pool.append({
+                            "topic": t["name"],
+                            "chapter": ch["chapter"],
+                            "subject": subject,
+                        })
+
+    random.shuffle(topics_pool)
+    ordered = topics_pool
+
+    # Get user profile for daily hours
+    profile = user_profiles_col().find_one({"user_id": user_id})
+    daily_hours = profile.get("daily_hours", 6) if profile else 6
+    sessions_per_day = max(3, daily_hours)  # at least 3 sessions per day
+
+    # Spread across 7 days
+    today = datetime.utcnow().date()
+    sessions = []
+    task_types = ["Theory & Notes", "Practice Problems", "Revision", "Problem Solving", "Concept Review"]
+    durations = [45, 60, 30, 50, 40]
+
+    for i, t_info in enumerate(ordered[:sessions_per_day * 7]):
+        day_offset = i // sessions_per_day
+        session_date = today + timedelta(days=day_offset)
+        task_type = task_types[i % len(task_types)]
+        duration = durations[i % len(durations)]
+
+        sessions.append({
+            "_id": ObjectId(),
+            "user_id": user_id,
+            "topic": t_info["topic"],
+            "subject": t_info["subject"],
+            "chapter": t_info["chapter"],
+            "duration_mins": duration,
+            "priority": "high",
+            "reason": f"{task_type} — Weak area",
+            "status": "pending",
+            "date": session_date.isoformat(),
+            "created_at": datetime.utcnow().isoformat(),
+        })
+
+    return sessions
+
+
+@app.get("/planner/plan/{user_id}")
+def get_plan_sessions(user_id: str):
+    """Return 7-day session plan built from syllabus weak topics.
+       Auto-regenerates if no pending sessions exist."""
+    col = study_sessions_col()
+    # Check for pending sessions
+    pending = col.count_documents({"user_id": user_id, "status": "pending"})
+    if pending == 0:
+        # Clear any leftover data and rebuild from current weak topics
+        col.delete_many({"user_id": user_id, "status": {"$ne": "done"}})
+        sessions = _build_7day_sessions(user_id)
+        if sessions:
+            col.insert_many(sessions)
+    existing = list(col.find({"user_id": user_id}))
+    return {"sessions": [_clean(s) for s in existing]}
+
+
+class SessionStatusRequest(BaseModel):
+    status: str  # "done" or "missed"
+
+
+@app.patch("/planner/session/{session_id}")
+def update_session_status(session_id: str, req: SessionStatusRequest):
+    """Mark a session as done or missed."""
+    from bson import ObjectId
+    col = study_sessions_col()
+    result = col.update_one(
+        {"_id": ObjectId(session_id)},
+        {"$set": {"status": req.status, "completed_at": datetime.utcnow().isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"ok": True}
+
+
+@app.post("/planner/rebalance/{user_id}")
+def rebalance_plan(user_id: str):
+    """Delete pending sessions and rebuild the plan, keeping done sessions."""
+    col = study_sessions_col()
+    # Keep sessions already done
+    col.delete_many({"user_id": user_id, "status": {"$ne": "done"}})
+    # Rebuild
+    new_sessions = _build_7day_sessions(user_id)
+    # Filter out topics already done in existing sessions
+    done_topics = set()
+    for s in col.find({"user_id": user_id, "status": "done"}):
+        done_topics.add(f"{s['subject']}|{s['chapter']}|{s['topic']}")
+    new_sessions = [s for s in new_sessions if f"{s['subject']}|{s.get('chapter','')}|{s['topic']}" not in done_topics]
+    if new_sessions:
+        col.insert_many(new_sessions)
+    all_sessions = list(col.find({"user_id": user_id}))
+    return {"sessions": [_clean(s) for s in all_sessions]}
 
 
 # ══════════════════════════════════════════════════════════
@@ -455,7 +578,7 @@ def get_dashboard_stats(user_id: str):
         "flashcards_due": due_count,
         "due_breakdown": due_breakdown,
         "mock_test_avg": cache.get("mock_test_avg", 0) if cache else 0,
-        "syllabus_coverage": plan.get("syllabus_coverage", 0) if plan else 0,
+        "syllabus_coverage": get_syllabus_progress(user_id).get("coverage", 0),
         "streak": streak,
         "today_plan": today_plan,
         "onboarding_completed": profile.get("onboarding_completed", False) if profile else False,
@@ -522,3 +645,220 @@ def _refresh_due_count(user_id):
         {"$set": {"flashcards_due": due_count, "updated_at": now.isoformat()}},
         upsert=True
     )
+
+
+# ══════════════════════════════════════════════════════════
+# SYLLABUS TRACKER
+# ══════════════════════════════════════════════════════════
+
+@app.get("/syllabus/full")
+def get_full_syllabus():
+    """Return the structured JEE syllabus with groups/chapters/topics."""
+    from syllabus_data import get_structured_syllabus
+    return get_structured_syllabus()
+
+
+@app.get("/syllabus/progress/{user_id}")
+def get_syllabus_progress(user_id: str):
+    """Return the user's completed topics and weak topics."""
+    doc = syllabus_progress_col().find_one({"user_id": user_id})
+    raw_completed = doc.get("completed", []) if doc else []
+    raw_weak = doc.get("weak_topics", []) if doc else []
+    total = get_total_topic_count()
+
+    # Build set of all valid keys to filter out stale data
+    from syllabus_data import get_structured_syllabus
+    syl = get_structured_syllabus()
+    valid_keys = set()
+    for subject, groups in syl.items():
+        for g in groups:
+            for ch in g["chapters"]:
+                for t in ch["topics"]:
+                    valid_keys.add(f"{subject}|{ch['chapter']}|{t['name']}")
+
+    completed = [k for k in raw_completed if k in valid_keys]
+    weak_topics = [k for k in raw_weak if k in valid_keys]
+
+    # Auto-clean stale keys from DB
+    if doc and (len(completed) != len(raw_completed) or len(weak_topics) != len(raw_weak)):
+        syllabus_progress_col().update_one(
+            {"user_id": user_id},
+            {"$set": {"completed": completed, "weak_topics": weak_topics}}
+        )
+
+    return {
+        "completed": completed,
+        "weak_topics": weak_topics,
+        "total_topics": total,
+        "completed_count": len(completed),
+        "coverage": round(len(completed) / total, 4) if total > 0 else 0,
+    }
+
+
+class SyllabusToggleRequest(BaseModel):
+    user_id: str
+    subject: str
+    chapter: str
+    topic: str
+
+
+@app.patch("/syllabus/toggle")
+def toggle_syllabus_topic(req: SyllabusToggleRequest):
+    """Toggle a topic's completion status."""
+    col = syllabus_progress_col()
+    key = f"{req.subject}|{req.chapter}|{req.topic}"
+
+    doc = col.find_one({"user_id": req.user_id})
+    if not doc:
+        col.insert_one({"user_id": req.user_id, "completed": [key], "weak_topics": []})
+        completed = [key]
+    else:
+        completed = doc.get("completed", [])
+        if key in completed:
+            completed.remove(key)
+        else:
+            completed.append(key)
+        col.update_one(
+            {"user_id": req.user_id},
+            {"$set": {"completed": completed}}
+        )
+
+    total = get_total_topic_count()
+    coverage = round(len(completed) / total, 4) if total > 0 else 0
+
+    dashboard_cache_col().update_one(
+        {"user_id": req.user_id},
+        {"$set": {"syllabus_coverage": coverage, "updated_at": datetime.utcnow().isoformat()}},
+        upsert=True
+    )
+    study_plans_col().update_one(
+        {"user_id": req.user_id},
+        {"$set": {"syllabus_coverage": coverage}},
+        upsert=True
+    )
+
+    return {
+        "completed": completed,
+        "total_topics": total,
+        "completed_count": len(completed),
+        "coverage": coverage,
+    }
+
+
+class BulkToggleRequest(BaseModel):
+    user_id: str
+    keys: list[str]       # list of "Subject|Chapter|Topic" keys
+    action: str           # "select" or "deselect"
+
+
+@app.patch("/syllabus/bulk-toggle")
+def bulk_toggle_topics(req: BulkToggleRequest):
+    """Select or deselect multiple topics at once."""
+    col = syllabus_progress_col()
+    doc = col.find_one({"user_id": req.user_id})
+    if not doc:
+        completed = []
+        col.insert_one({"user_id": req.user_id, "completed": [], "weak_topics": []})
+    else:
+        completed = doc.get("completed", [])
+
+    completed_set = set(completed)
+    if req.action == "select":
+        completed_set.update(req.keys)
+    else:
+        completed_set -= set(req.keys)
+
+    completed = list(completed_set)
+    col.update_one({"user_id": req.user_id}, {"$set": {"completed": completed}})
+
+    total = get_total_topic_count()
+    coverage = round(len(completed) / total, 4) if total > 0 else 0
+
+    dashboard_cache_col().update_one(
+        {"user_id": req.user_id},
+        {"$set": {"syllabus_coverage": coverage, "updated_at": datetime.utcnow().isoformat()}},
+        upsert=True
+    )
+    study_plans_col().update_one(
+        {"user_id": req.user_id},
+        {"$set": {"syllabus_coverage": coverage}},
+        upsert=True
+    )
+
+    return {
+        "completed": completed,
+        "total_topics": total,
+        "completed_count": len(completed),
+        "coverage": coverage,
+    }
+
+
+class StrengthRequest(BaseModel):
+    user_id: str
+    subject: str
+    chapter: str
+    topic: str
+    strength: str   # "strong" | "weak" | "none"
+
+
+@app.patch("/syllabus/set-strength")
+def set_topic_strength(req: StrengthRequest):
+    """Set a topic as strong, weak, or none (remove)."""
+    col = syllabus_progress_col()
+    key = f"{req.subject}|{req.chapter}|{req.topic}"
+
+    doc = col.find_one({"user_id": req.user_id})
+    if not doc:
+        weak = [key] if req.strength == "weak" else []
+        col.insert_one({"user_id": req.user_id, "completed": [], "weak_topics": weak})
+    else:
+        weak = doc.get("weak_topics", [])
+        # Remove first, then add if needed
+        if key in weak:
+            weak.remove(key)
+        if req.strength == "weak":
+            weak.append(key)
+        col.update_one(
+            {"user_id": req.user_id},
+            {"$set": {"weak_topics": weak}}
+        )
+
+    doc = col.find_one({"user_id": req.user_id})
+    return {"weak_topics": doc.get("weak_topics", []) if doc else []}
+
+
+@app.get("/syllabus/weak/{user_id}")
+def get_weak_and_incomplete(user_id: str):
+    """Return topics explicitly marked weak — includes completed-but-weak topics."""
+    doc = syllabus_progress_col().find_one({"user_id": user_id})
+    weak = set(doc.get("weak_topics", [])) if doc else set()
+    completed = set(doc.get("completed", [])) if doc else set()
+
+    if not weak:
+        return {"focus_topics": [], "total": 0}
+
+    from syllabus_data import get_structured_syllabus
+    syllabus = get_structured_syllabus()
+    focus_topics = []
+
+    for subject, groups in syllabus.items():
+        for group in groups:
+            for chapter in group["chapters"]:
+                for topic in chapter["topics"]:
+                    key = f"{subject}|{chapter['chapter']}|{topic['name']}"
+                    if key in weak:
+                        is_done = key in completed
+                        focus_topics.append({
+                            "subject": subject,
+                            "chapter": chapter["chapter"],
+                            "topic": topic["name"],
+                            "is_weak": True,
+                            "is_incomplete": not is_done,
+                            "is_completed": is_done,
+                            "priority": "high",
+                        })
+
+    # incomplete-weak first, then completed-weak
+    focus_topics.sort(key=lambda x: (0 if not x["is_completed"] else 1, x["subject"]))
+    return {"focus_topics": focus_topics, "total": len(focus_topics)}
+

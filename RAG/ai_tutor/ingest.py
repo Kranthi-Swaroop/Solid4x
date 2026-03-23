@@ -3,14 +3,8 @@ import os
 import json
 import concurrent.futures
 import fitz
-import pytesseract
-from PIL import Image
 from pathlib import Path
 from ai_tutor.config import JEE_DIR, CHUNK_SIZE, CHUNK_OVERLAP, CHUNKS_CACHE, SUBJECTS, CLASS_LEVELS
-
-TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-if os.path.exists(TESSERACT_CMD):
-    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
 INDEX_STATE_FILE = Path(__file__).parent.parent / "index_state.json"
 
@@ -20,7 +14,6 @@ NOISE_PATTERNS = [
     re.compile(r'https?://\S+', re.IGNORECASE),
     re.compile(r'(?:ph|phone|mob|tel)[.:\s]*[\d\s\-+()]{7,}', re.IGNORECASE),
     re.compile(r'office[.:]\s*[\w\s,/-]{5,60}', re.IGNORECASE),
-    re.compile(r'[a-zA-Z\s]+classes?\b', re.IGNORECASE),
     re.compile(r'ranchi|coaching|newton|malik', re.IGNORECASE),
 ]
 
@@ -30,6 +23,24 @@ CHAPTER_PATTERNS = [
     re.compile(r'^\s*(\d+\.\d+)\s+([A-Z][A-Za-z\s,&()]{3,60})\s*$', re.MULTILINE),
     re.compile(r'(?:UNIT|Unit|SECTION|Section)\s*(\d+)\s*[:\-]?\s*(.{0,80})', re.MULTILINE),
 ]
+
+# Book name detection from filename
+BOOK_NAME_MAP = {
+    "modern abc": "Modern ABC",
+    "ncert": "NCERT",
+    "cengage": "Cengage",
+    "hc verma": "HC Verma",
+    "irodov": "Irodov",
+    "rd sharma": "RD Sharma",
+}
+
+
+def detect_book_name(filename):
+    fname_lower = filename.lower()
+    for key, name in BOOK_NAME_MAP.items():
+        if key in fname_lower:
+            return name
+    return "Textbook"
 
 
 def clean_text(text):
@@ -55,41 +66,18 @@ def clean_text(text):
 
 
 def extract_text_from_page(page):
-    words = page.get_text("words")
-    if not words:
-        return ""
-    page_width = page.rect.width
-    mid_x = page_width / 2
-    left_words = [w for w in words if w[0] < mid_x]
-    right_words = [w for w in words if w[0] >= mid_x]
-    if not right_words or (len(right_words) < len(left_words) * 0.1):
-        all_words = sorted(words, key=lambda w: (round(w[1] / 12) * 12, w[0]))
-        return " ".join(w[4] for w in all_words)
-    left_words.sort(key=lambda w: (round(w[1] / 12) * 12, w[0]))
-    right_words.sort(key=lambda w: (round(w[1] / 12) * 12, w[0]))
-    left_text = " ".join(w[4] for w in left_words)
-    right_text = " ".join(w[4] for w in right_words)
-    return left_text + "\n" + right_text
+    """Simple full-page text extraction for clean text PDFs."""
+    raw = page.get_text("text")
+    return clean_text(raw) if raw else ""
 
 
 def process_page(pdf_path_str, page_num):
     doc = fitz.open(pdf_path_str)
     try:
         page = doc[page_num]
-        raw_text = extract_text_from_page(page)
-        cleaned = clean_text(raw_text)
-        if len(cleaned) < 150:
-            try:
-                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                ocr_text = pytesseract.image_to_string(img)
-                cleaned_ocr = clean_text(ocr_text)
-                if len(cleaned_ocr) > len(cleaned):
-                    cleaned = cleaned_ocr
-            except Exception:
-                pass
-        if len(cleaned) > 50:
-            return {"page": page_num + 1, "text": cleaned}
+        text = extract_text_from_page(page)
+        if len(text) > 50:
+            return {"page": page_num + 1, "text": text}
     finally:
         doc.close()
     return None
@@ -133,11 +121,13 @@ def detect_chapters(pages):
 
 
 def split_into_chunks(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+    """Section-aware chunking — splits at paragraph boundaries, never mid-sentence."""
     chunks = []
     start = 0
     while start < len(text):
         end = start + chunk_size
         if end < len(text):
+            # Try to break at paragraph, then sentence, then space
             for sep in ['\n\n', '\n', '. ', ' ']:
                 break_point = text.rfind(sep, start + chunk_size // 2, end)
                 if break_point > start:
@@ -196,7 +186,9 @@ def process_pdf(pdf_path, start_chunk_id):
     subject_dir = parts[0]
     class_level = parts[1]
     subject_name = SUBJECTS.get(subject_dir, subject_dir)
-    print(f"Processing: {subject_dir} Class {class_level} - {pdf_path.name}")
+    book_name = detect_book_name(pdf_path.name)
+
+    print(f"Processing: {book_name} {subject_dir} Class {class_level} - {pdf_path.name}")
     pages = extract_pdf_text(pdf_path)
     pages = detect_chapters(pages)
     chapter_texts = {}
@@ -211,7 +203,7 @@ def process_pdf(pdf_path, start_chunk_id):
     for chapter, data in chapter_texts.items():
         raw_chunks = split_into_chunks(data["text"])
         for chunk_text in raw_chunks:
-            context_prefix = f"[{subject_name} | Class {class_level} | {chapter}]"
+            context_prefix = f"[{book_name} | {subject_name} | Class {class_level} | {chapter}]"
             chunks.append({
                 "id": f"chunk_{chunk_id}",
                 "text": chunk_text,
@@ -220,6 +212,7 @@ def process_pdf(pdf_path, start_chunk_id):
                     "subject": subject_name,
                     "class_level": class_level,
                     "chapter": chapter,
+                    "book_name": book_name,
                     "source_file": pdf_path.name,
                     "page_range": f"{min(data['pages'])}-{max(data['pages'])}"
                 }

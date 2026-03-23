@@ -48,3 +48,12 @@ def retention_reviews_col():
 
 def dashboard_cache_col():
     return get_db()["dashboard_cache"]
+
+
+def syllabus_progress_col():
+    return get_db()["syllabus_progress"]
+
+
+def study_sessions_col():
+    return get_db()["study_sessions"]
+

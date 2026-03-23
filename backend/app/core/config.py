@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "password"
 
+    # Gemini Settings (For YouTube & Solvers)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "models/gemma-3-27b-it"
+
     class Config:
         case_sensitive = True
         env_file = ".env"

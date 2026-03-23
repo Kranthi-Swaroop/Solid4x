@@ -46,3 +46,16 @@ desktop.ini
 
 # ===== Misc =====
 response_*.json
+
+# ===== Application Data & Databases =====
+backend/data/
+RAG/chroma_db/
+RAG/chunks_cache.json
+RAG/bm25_index.pkl
+RAG/index_state.json
+backend_out.log
+backend_err.log
+
+# ===== Large Assets & PDFs =====
+JEE/
+*.pdf

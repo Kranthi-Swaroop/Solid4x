@@ -9,13 +9,19 @@ export default function Dashboard() {
   const fallbackName = localStorage.getItem('studentName') || 'Student';
 
   const [stats, setStats] = useState(null);
+  const [syllabusProg, setSyllabusProg] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
-    fetch(`/dashboard/stats/${userId}`)
-      .then(res => res.ok ? res.json() : null)
-      .then(data => { if (data) setStats(data); })
+    Promise.all([
+      fetch(`/dashboard/stats/${userId}`).then(r => r.ok ? r.json() : null),
+      fetch(`/syllabus/progress/${userId}`).then(r => r.ok ? r.json() : null),
+    ])
+      .then(([dashData, sylData]) => {
+        if (dashData) setStats(dashData);
+        if (sylData) setSyllabusProg(sylData);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [userId]);
@@ -33,8 +39,10 @@ export default function Dashboard() {
   const flashcardsDue = stats?.flashcards_due || 0;
   const dueBreakdown = stats?.due_breakdown || {};
   const mockAvg = stats?.mock_test_avg || 0;
-  const syllabusCoverage = stats?.syllabus_coverage || 0;
+  const syllabusCoverage = syllabusProg?.coverage || stats?.syllabus_coverage || 0;
   const coveragePct = Math.round(syllabusCoverage * 100);
+  const completedTopics = syllabusProg?.completed_count || 0;
+  const totalSyllabusTopics = syllabusProg?.total_topics || 0;
 
   const todayPlan = stats?.today_plan || [];
 
@@ -79,8 +87,8 @@ export default function Dashboard() {
           <Link to="/mocktest">
             <span className="dash-nav-icon">📝</span> Mock Tests
           </Link>
-          <Link to="/" style={{ opacity: 0.5, pointerEvents: 'none' }}>
-            <span className="dash-nav-icon">📊</span> Performance Analytics
+          <Link to="/syllabus">
+            <span className="dash-nav-icon">📊</span> Syllabus Tracker
           </Link>
         </nav>
 
@@ -167,12 +175,12 @@ export default function Dashboard() {
                   </div>
 
                   {/* Syllabus Coverage */}
-                  <div className="dash-stat-card syllabus">
+                  <div className="dash-stat-card syllabus" onClick={() => navigate('/syllabus')} style={{ cursor: 'pointer' }}>
                     <div className="dash-stat-label">Syllabus Coverage</div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
                         <div className="dash-stat-value">{coveragePct}%</div>
-                        <div className="dash-stat-sub">completed</div>
+                        <div className="dash-stat-sub">{completedTopics}/{totalSyllabusTopics} topics</div>
                       </div>
                       <div className="dash-radial">
                         <svg width="52" height="52" viewBox="0 0 52 52">

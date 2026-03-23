@@ -4,7 +4,4 @@ rank-bm25
 sentence-transformers
 google-genai
 python-dotenv
-pytesseract
-opencv-python
-Pillow
 numpy

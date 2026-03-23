@@ -1,0 +1,232 @@
+.video-arena-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  color: #e2e8f0;
+}
+
+.video-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.video-header p {
+  color: #94a3b8;
+  margin-bottom: 2rem;
+}
+
+.video-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  background: #1e293b;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.url-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.url-input:focus {
+  border-color: #3b82f6;
+}
+
+.lang-select {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.process-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.process-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.process-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.process-btn:disabled {
+  background: #475569;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.error-msg {
+  background: #ef444420;
+  color: #ef4444;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid #ef444440;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.player-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.player-wrapper {
+  position: relative;
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+}
+
+.react-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.audio-section {
+  background: #1e293b;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid #8b5cf6;
+}
+
+.audio-section h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.audio-player {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
+
+.audio-player::-webkit-media-controls-panel {
+  background-color: #334155;
+}
+
+.translation-box {
+  background: #0f172a;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.notes-section {
+  background: #1e293b;
+  padding: 2rem;
+  border-radius: 12px;
+  height: calc(100vh - 250px);
+  overflow-y: auto;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.notes-section h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #e2e8f0;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.markdown-content {
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+  color: #f8fafc;
+  margin-top: 1.5rem;
+}
+
+.markdown-content h1 { font-size: 1.4rem; }
+.markdown-content h2 { font-size: 1.2rem; }
+.markdown-content h3 { font-size: 1.1rem; }
+
+.markdown-content p {
+  margin-bottom: 1rem;
+}
+
+.markdown-content ul, .markdown-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-content li {
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content code {
+  background: #0f172a;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #60a5fa;
+}
+
+/* Scrollbar styling for notes */
+.notes-section::-webkit-scrollbar {
+  width: 8px;
+}
+.notes-section::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 8px;
+}
+.notes-section::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 8px;
+}
+.notes-section::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+@media (max-width: 1024px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .notes-section {
+    height: auto;
+    max-height: 600px;
+  }
+}

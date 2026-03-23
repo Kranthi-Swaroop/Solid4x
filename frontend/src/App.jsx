@@ -6,7 +6,9 @@ import StudyPlan from "./components/planner/StudyPlan";
 import RetentionDashboard from "./components/retention/RetentionDashboard";
 import MockTestApp from "./components/mocktest/MockTestApp";
 import Dashboard from "./components/dashboard/Dashboard";
+import VideoArena from "./components/video/VideoArena";
 import AuthPage from "./components/auth/AuthPage";
+import Syllabus from "./components/syllabus/Syllabus";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
@@ -89,6 +91,8 @@ export default function App() {
           element={<RetentionDashboard profileId={profileId || localStorage.getItem('profileId')} />}
         />
         <Route path="/mocktest" element={<MockTestApp />} />
+        <Route path="/video" element={<VideoArena />} />
+        <Route path="/syllabus" element={<Syllabus />} />
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

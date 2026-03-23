@@ -10,6 +10,26 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
       },
+      "/planner": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+      },
+      "/retention": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+      },
+      "/dashboard": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+      },
+      "/syllabus": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+      },
+      "/static": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
     },
   },
 });
