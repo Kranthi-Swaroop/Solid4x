@@ -6,6 +6,24 @@ import './mocktest.css';
 
 const TOTAL_TIME = 3 * 60 * 60; // 3 hours
 
+const extractIntegerAnswer = (q) => {
+  if (q.correct_answer !== undefined && q.correct_answer !== null) return String(q.correct_answer);
+  if (q.answer !== undefined && q.answer !== null) return String(q.answer);
+  if (!q.explanation) return null;
+  
+  // Try to extract the last number from the explanation HTML
+  const textSplit = q.explanation.split(/<br>|=|\n|(&nbsp;)| /);
+  for (let i = textSplit.length - 1; i >= 0; i--) {
+     const part = textSplit[i];
+     if (!part) continue;
+     const clean = part.replace(/<\/?[^>]+(>|$)/g, "").replace(/\$/g, "").trim();
+     if (/^-?\d+(\.\d+)?$/.test(clean)) {
+       return clean;
+     }
+  }
+  return null;
+};
+
 export default function MockTestApp() {
   const [view, setView] = useState('dashboard');
   const [history, setHistory] = useState([]);
@@ -172,8 +190,14 @@ export default function MockTestApp() {
           if (correctOpt) {
             isCorrect = String(correctOpt.value).trim().toLowerCase() === String(userAns).trim().toLowerCase() || String(correctOpt.id) === String(userAns);
           }
-        } else if (q.answer) {
-          isCorrect = String(q.answer).trim().toLowerCase() === String(userAns).trim().toLowerCase();
+        } else if (q.answer || q.correct_answer) {
+          isCorrect = String(q.answer || q.correct_answer).trim().toLowerCase() === String(userAns).trim().toLowerCase();
+        } else {
+          // Fallback for integer parsing
+          const integerAns = extractIntegerAnswer(q);
+          if (integerAns !== null) {
+            isCorrect = integerAns === String(userAns).trim().toLowerCase();
+          }
         }
       }
       return {
@@ -267,8 +291,12 @@ export default function MockTestApp() {
     if (q.type === 'mcq') {
        isCorrect = q.correct_options?.includes(userAns);
     } else {
-       const correctVal = String(q.correct_answer || q.answer).trim().toLowerCase();
-       isCorrect = correctVal === String(userAns).trim().toLowerCase();
+       const correctVal = extractIntegerAnswer(q);
+       if (correctVal !== null) {
+         isCorrect = correctVal.trim().toLowerCase() === String(userAns).trim().toLowerCase();
+       } else {
+         isCorrect = false; // Fallback if unable to extract
+       }
     }
 
     setPracticeSubmitted(prev => ({ ...prev, [q.question_id]: isCorrect ? 'correct' : 'incorrect' }));
@@ -490,7 +518,7 @@ export default function MockTestApp() {
                       <p style={{ margin: '0 0 15px 0', fontSize: '1.1rem' }}>
                         <strong>Exact Mathematical Form: </strong> 
                         <span style={{ background: '#d4edda', color: '#155724', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', marginLeft: '10px' }}>
-                          {q.type === 'mcq' ? q.correct_options?.join(', ') : (q.correct_answer || q.answer)}
+                          {q.type === 'mcq' ? q.correct_options?.join(', ') : (extractIntegerAnswer(q) || 'Answer in explanation')}
                         </span>
                       </p>
                       {q.explanation && (

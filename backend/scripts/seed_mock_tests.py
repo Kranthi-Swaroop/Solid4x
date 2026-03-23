@@ -56,7 +56,7 @@ def generate_test(token, user_id):
     print("  📝 Generating mock test (this may take a while due to HDBSCAN)...")
     resp = requests.post(
         f"{BASE}/api/v1/tests/generate",
-        json={"user_id": user_id, "subjects": ["physics", "chemistry", "mathematics"]},
+        json={"user_id": user_id, "subjects": ["Physics", "Chemistry", "Mathematics"]},
         headers={"Authorization": f"Bearer {token}"},
         timeout=300  # 5 minutes max - HDBSCAN can be slow
     )
@@ -83,7 +83,12 @@ def simulate_answers(questions, accuracy):
     answers = []
     stats = {"correct": 0, "incorrect": 0, "by_subject": {}}
 
-    for q in questions:
+    # Pre-calculate a fixed pool of time (2 hours to 2h45m max, strictly under 3 hours = 10800s)
+    total_time_pool = random.randint(7200, 9900)
+    weights = [random.uniform(0.5, 2.0) for _ in questions]
+    total_weight = sum(weights)
+
+    for i, q in enumerate(questions):
         subj = q.get("_subject", "unknown")
         if subj not in stats["by_subject"]:
             stats["by_subject"][subj] = {"correct": 0, "incorrect": 0}
@@ -118,10 +123,12 @@ def simulate_answers(questions, accuracy):
             stats["incorrect"] += 1
             stats["by_subject"][subj]["incorrect"] += 1
 
+        allocated_time = int((weights[i] / total_weight) * total_time_pool)
+
         answers.append({
             "question_id": q["question_id"],
             "is_correct": is_correct,
-            "time_spent": random.randint(30, 300),
+            "time_spent": max(10, allocated_time),
             "selected_option": selected
         })
 

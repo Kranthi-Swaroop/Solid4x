@@ -8,8 +8,8 @@ from pathlib import Path
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-MONGODB_URI = os.getenv("MONGODB_URI")
-DB_NAME = "solid4x"
+MONGODB_URI = os.getenv("MONGODB_URI") or "mongodb://root:dbVAazDM1bCFRqVRikzLvbPkcfgGCo0WR2vl97NJZnZG5KMk9tAVvodhBqBsGn7l@168.119.148.180:27017/?directConnection=true"
+DB_NAME = "solid4x_db"
 
 _client = None
 
