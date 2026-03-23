@@ -15,7 +15,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/api": {
-        target: "http://localhost:8000",
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
         changeOrigin: true,
       },
       "/planner": {
@@ -36,7 +36,23 @@ export default defineConfig({
       },
 
       "/static": {
-        target: "http://localhost:8000",
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
+        changeOrigin: true,
+      },
+      "/syllabus": {
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
+        changeOrigin: true,
+      },
+      "/planner": {
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
+        changeOrigin: true,
+      },
+      "/retention": {
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
+        changeOrigin: true,
+      },
+      "/dashboard": {
+        target: "https://8251-2a09-bac1-36e0-1468-00-ca-6e.ngrok-free.app",
         changeOrigin: true,
       },
     },
