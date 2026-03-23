@@ -90,7 +90,7 @@ export default function App() {
           path="/retention"
           element={<RetentionDashboard profileId={profileId || localStorage.getItem('profileId')} />}
         />
-        <Route path="/mocktest" element={<MockTestApp />} />
+        <Route path="/mocktest" element={<div className="mocktest-page"><MockTestApp /></div>} />
         <Route path="/video" element={<VideoArena />} />
         <Route path="/syllabus" element={<Syllabus />} />
         <Route path="/login" element={<Navigate to="/" replace />} />
