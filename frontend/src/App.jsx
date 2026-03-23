@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Onboarding from "./components/planner/Onboarding";
 import StudyPlan from "./components/planner/StudyPlan";
 
@@ -21,9 +21,12 @@ export default function App() {
 
   const handleLogin = (name) => {
     setIsLoggedIn(true);
-    // Check if onboarding was completed
     checkOnboarding();
   };
+
+  useEffect(() => {
+    if (isLoggedIn) checkOnboarding();
+  }, [isLoggedIn]);
 
   const checkOnboarding = async () => {
     const userId = localStorage.getItem('profileId');
@@ -81,9 +84,9 @@ export default function App() {
         <Route
           path="/planner"
           element={
-            profileId
-              ? <StudyPlan profileId={profileId} profile={profile} />
-              : <Navigate to="/onboarding" replace />
+            needsOnboarding
+              ? <Navigate to="/onboarding" replace />
+              : <StudyPlan profileId={profileId} profile={profile} />
           }
         />
         <Route
